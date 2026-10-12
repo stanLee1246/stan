@@ -10,7 +10,6 @@
 | 编制日期 | 2026年10月12日 |
 | 主要运行环境 | 本地 Windows、Python 3.12、Node.js 24 LTS、MySQL 8.0/8.4 |
 | 基础工程 | Vue 3、Vite、ECharts、FastAPI、SQLAlchemy、Alembic |
-| 新增设计 | 基于职业兴趣与探索状态的七种可爱角色、可解释标签、画像与推荐版本追溯 |
 
 ## 摘要
 
