@@ -2,6 +2,8 @@
 
 面向湖南交通工程学院学生的毕业设计第一版。Vue 3 + Vite + ECharts 前端，FastAPI + SQLAlchemy + Alembic 后端，**正式本地开发使用 MySQL 8.0 / 8.4**。不依赖云数据库、付费 API、学校 SSO 或 Docker；Docker 仅用于可选的开发验证。
 
+正式技术路线与七种职业探索角色设计见 [大数据技术实施方案](docs/FORMAL_PROJECT_PLAN.md)。新增问卷、角色、完整仓库和批处理在方案中明确标记为待实现，不会因文档更新自动加入现有应用。
+
 ## 在你的 Windows 电脑运行
 
 1. 安装 Python 3.12、Node.js 24 LTS（或 22.12+），启动已安装的 MySQL 服务。
