@@ -41,7 +41,7 @@ async function runCrawler() {
 async function readSurveyFile(e) {
   const file = e.target.files[0]; if (!file) return
   surveyContent.value = ''; surveyFilename.value = ''
-  if (file.size > 500000) { error.value = '问卷文件请小于 500KB，每批最多 2000 条记录。'; return }
+  if (file.size > 500000) { error.value = '问卷文件请小于 500KB，每批最多 1000 条记录。'; return }
   try {
     surveyContent.value = await file.text(); surveyFilename.value = file.name
     surveyFormat.value = file.name.toLowerCase().endsWith('.json') ? 'json' : 'csv'
@@ -147,7 +147,7 @@ onMounted(load)
     <p v-if="surveyFilename" class="muted">已读取 {{ surveyFilename }}；文件内容仅在提交后送至本项目后端。</p>
     <label>内容格式<select v-model="surveyFormat"><option value="csv">UTF-8 CSV（首行为表头）</option><option value="json">JSON 记录数组</option></select></label>
     <label>问卷记录内容<textarea v-model="surveyContent" rows="8" required :placeholder="surveyFormat === 'csv' ? '粘贴带表头的 CSV 内容，或选择文件' : '粘贴 JSON 数组，或含 records 数组的对象'"></textarea></label>
-    <p class="muted">必填：student_key（随机匿名标识）、response_id（本来源内唯一答卷编号）、consent（同意使用）。兴趣题为 R1–R5、I1–I5、A1–A5、S1–S5、E1–E5、C1–C5，分值 1–5，缺失留空；JSON 将题目放入 answers 对象。选填专业、毕业年份、技能、城市和发展意向。</p>
+    <p class="muted">每批最多1000条。必填答卷编号 response_id 与本人同意 consent；JSON及标准模板还需随机匿名 student_key，平台导出可按本来源的答卷编号生成去标识键。兴趣题为 R1–R5、I1–I5、A1–A5、S1–S5、E1–E5、C1–C5，分值1–5，缺失留空；JSON将题目放入 answers 对象。选填专业、毕业年份、技能、城市和发展意向。</p>
     <button type="button" class="ghost" :disabled="busy" @click="fillSurveyExample">填入一份模拟问卷示例</button>
     <details v-if="surveyFormat === 'csv'" class="admin-source-card"><summary>问卷平台 CSV 列映射（可选）</summary>
       <p class="muted">表头已经使用标准字段时无需填写。中文导出表头可显式映射；无关列需在导入前删除或明确填写忽略列。</p>
