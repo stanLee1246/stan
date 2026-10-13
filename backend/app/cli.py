@@ -78,6 +78,13 @@ def seed_demo():
                                source_url=f'https://example.com/demo/{i}', data_kind='demo', requirements_verified=False))
         db.commit()
         print(f"演示数据准备完成：新增 {result['quality']['accepted']}，重复 {result['quality']['duplicates']}。")
+        from .demo_data import seed_extended_opportunities
+        from .interests import seed_demo_surveys
+        from .crawling import seed_crawl_demo
+        extra = seed_extended_opportunities(db)
+        seed_demo_surveys(db, admin.id)
+        seed_crawl_demo(db, admin.id)
+        print(f'已准备职业探索与多维图表案例：新增扩展机会 {extra} 条；问卷和采集演示均独立标记为模拟。')
 
 
 def main():

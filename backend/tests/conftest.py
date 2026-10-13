@@ -1,5 +1,6 @@
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -10,8 +11,10 @@ if os.getenv('TEST_MYSQL') == '1':
     os.environ.pop('DATABASE_URL', None)
     os.environ['DB_NAME'] = 'career_platform_tests'
 else:
-    os.environ['DATABASE_URL'] = 'sqlite:///' + str(Path(__file__).resolve().parents[1] / 'runtime' / 'test.db')
-    Path(__file__).resolve().parents[1].joinpath('runtime').mkdir(exist_ok=True)
+    test_root = Path(__file__).resolve().parents[1] / 'runtime'
+    test_root.mkdir(exist_ok=True)
+    test_workspace = tempfile.TemporaryDirectory(prefix='pytest-', dir=test_root)
+    os.environ['DATABASE_URL'] = 'sqlite:///' + str(Path(test_workspace.name) / 'test.db')
 
 from fastapi.testclient import TestClient
 from app.database import Base, SessionLocal, engine
@@ -24,6 +27,10 @@ from app.security import hash_password
 @pytest.fixture(scope='session', autouse=True)
 def prepare_database():
     migrate()
+    yield
+    engine.dispose()
+    if os.getenv('TEST_MYSQL') != '1':
+        test_workspace.cleanup()
 
 
 @pytest.fixture()

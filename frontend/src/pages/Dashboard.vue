@@ -2,9 +2,10 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { api, auth, preferences, setDemo, paths, displayDate } from '../api'
 import Chart from '../components/Chart.vue'
+import '../styles/analytics.css'
 const data = ref(null), sources = ref([]), opportunities = ref([]), profile = ref(null)
 const source = ref(''), major = ref(''), year = ref(''), error = ref(''), loading = ref(false)
-let requestId = 0
+let requestId = 0, initializationId = 0
 const palette = ['#246c5a', '#73a891', '#e0ba76', '#9baabe', '#bdcfc3', '#e5ded1']
 const pie = computed(() => ({ color: palette, tooltip: { trigger: 'item', formatter: '{b}: {c} 人（{d}%）' },
   legend: { bottom: 0, icon: 'circle' }, series: [{ type: 'pie', radius: ['46%', '70%'], center: ['50%', '43%'],
@@ -29,14 +30,21 @@ async function load() {
   finally { if (id === requestId) loading.value = false }
 }
 async function initialize() {
-  error.value = ''
+  const id = ++initializationId
+  requestId += 1; error.value = ''; loading.value = true; data.value = null
+  const demo = preferences.demo
   try {
-    sources.value = await api(`/data-sources?data_kind=${preferences.demo ? 'demo' : 'authorized'}`)
-    source.value = sources.value[0] || ''
-    opportunities.value = await api(`/opportunities?data_kind=${preferences.demo ? 'demo' : 'public'}`)
-    if (auth.user) { profile.value = await api('/profile'); if (profile.value) major.value = profile.value.major }
+    const [newSources, newOpportunities, newProfile] = await Promise.all([
+      api(`/data-sources?data_kind=${demo ? 'demo' : 'authorized'}`),
+      api(`/opportunities?data_kind=${demo ? 'demo' : 'public'}`),
+      auth.user ? api('/profile') : Promise.resolve(null)
+    ])
+    if (id !== initializationId) return
+    sources.value = newSources; source.value = sources.value[0] || ''
+    opportunities.value = newOpportunities; profile.value = newProfile
+    if (profile.value) major.value = profile.value.major
     await load()
-  } catch (e) { error.value = e.message }
+  } catch (e) { if (id === initializationId) { error.value = e.message; loading.value = false; opportunities.value = [] } }
 }
 watch(() => preferences.demo, initialize)
 onMounted(initialize)
@@ -45,6 +53,10 @@ onMounted(initialize)
 <template>
   <div class="page-heading"><div><div class="eyebrow">DEVELOPMENT OVERVIEW</div><h1>{{ auth.user ? `${auth.user.nickname}，你好` : '从这里，看见更多可能' }}<span class="heading-dot">.</span></h1><p>了解同专业去向，发现机会，规划属于自己的下一步。</p></div><RouterLink class="button" to="/profile">完善个人画像 <span>↗</span></RouterLink></div>
   <section class="welcome-banner"><div><span class="overline">每一种未来，都值得认真探索</span><h2>你的方向，可以不止一个。</h2><p>就业、升学、考公与实习，多路径准备，从了解自己开始。</p><RouterLink to="/opportunities">去看看发展机会 <span>→</span></RouterLink></div><div class="compass-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="north">N</span><span class="compass-arrow">↗</span><span class="art-label">FIND YOUR WAY</span></div></section>
+  <div class="analytics-home-actions">
+    <RouterLink to="/analytics" class="analytics-home-link"><span class="analytics-home-icon" aria-hidden="true">▥</span><div><span class="analytics-kicker">从数据看机会</span><h2>多维数据探索</h2><p>城市、路径、技能与公告趋势，六种图表共同观察。</p></div><span aria-hidden="true">↗</span></RouterLink>
+    <RouterLink to="/decisions" class="analytics-home-link analytics-home-link-decision"><span class="analytics-home-icon" aria-hidden="true">◎</span><div><span class="analytics-kicker">从画像做选择</span><h2>职业决策工作台</h2><p>结合个人偏好比较多条路径，找到下一步行动。</p></div><span aria-hidden="true">↗</span></RouterLink>
+  </div>
   <div v-if="preferences.demo" class="alert demo">演示模式 · 当前图表和机会均为模拟数据，不代表学校真实统计或招聘。</div>
   <div v-if="error" class="alert error" role="alert">{{ error }} <button class="ghost" @click="initialize">重试</button></div>
   <section class="filterbar">

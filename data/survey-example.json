@@ -1,0 +1,101 @@
+{
+  "source_name": "示例问卷：非真实学生测量",
+  "data_kind": "demo",
+  "authorized_consent": false,
+  "records": [
+    {
+      "student_key": "synthetic_000001",
+      "response_id": "demo-survey-0001",
+      "major": "数据科学与大数据技术",
+      "graduation_year": 2027,
+      "skills": [
+        "python",
+        "SQL"
+      ],
+      "cities": [
+        "衡阳市"
+      ],
+      "intents": [
+        "employment",
+        "postgraduate"
+      ],
+      "answers": {
+        "R1": 2,
+        "R2": 2,
+        "R3": 2,
+        "R4": 2,
+        "R5": 2,
+        "I1": 5,
+        "I2": 5,
+        "I3": 5,
+        "I4": 5,
+        "I5": 5,
+        "A1": 2,
+        "A2": 2,
+        "A3": 2,
+        "A4": 2,
+        "A5": 2,
+        "S1": 2,
+        "S2": 2,
+        "S3": 2,
+        "S4": 2,
+        "S5": 2,
+        "E1": 2,
+        "E2": 2,
+        "E3": 2,
+        "E4": 2,
+        "E5": 2,
+        "C1": 4,
+        "C2": 4,
+        "C3": 4,
+        "C4": 4,
+        "C5": 4
+      },
+      "consent": true
+    },
+    {
+      "student_key": "synthetic_000002",
+      "response_id": "demo-survey-0002",
+      "major": "软件工程",
+      "graduation_year": 2028,
+      "skills": [],
+      "cities": [],
+      "intents": [
+        "internship"
+      ],
+      "answers": {
+        "R1": 4,
+        "R2": 4,
+        "R3": 4,
+        "R4": 4,
+        "R5": 4,
+        "I1": 4,
+        "I2": 4,
+        "I3": 4,
+        "I4": 4,
+        "I5": 4,
+        "A1": 4,
+        "A2": 4,
+        "A3": 4,
+        "A4": 4,
+        "A5": 4,
+        "S1": 4,
+        "S2": 4,
+        "S3": 4,
+        "S4": 4,
+        "S5": 4,
+        "E1": 4,
+        "E2": 4,
+        "E3": 4,
+        "E4": 4,
+        "E5": 4,
+        "C1": 4,
+        "C2": 4,
+        "C3": 4,
+        "C4": 4,
+        "C5": 4
+      },
+      "consent": true
+    }
+  ]
+}

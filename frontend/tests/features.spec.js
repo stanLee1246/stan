@@ -1,0 +1,135 @@
+import { test, expect } from '@playwright/test'
+
+async function signIn(page, admin = false) {
+  await page.goto('/login')
+  await page.getByLabel('用户名', { exact: true }).fill(admin ? 'demo_admin' : 'demo_student')
+  await page.getByLabel('密码', { exact: true }).fill(admin ? 'DemoAdmin123!' : 'DemoStudent123!')
+  await page.getByRole('button', { name: '登录', exact: true }).click()
+  await expect(page.getByRole('button', { name: '退出', exact: true })).toBeVisible()
+}
+
+test('questionnaire -> anthropomorphic role -> decision -> action -> withdrawal', async ({ page }) => {
+  test.setTimeout(90000)
+  const errors = []
+  page.on('pageerror', e => errors.push(e.message))
+  await signIn(page)
+  await page.getByLabel('演示数据', { exact: true }).check()
+  await page.goto('/profile')
+  await expect(page.getByRole('button', { name: '保存新版本 →' })).toBeEnabled()
+  await page.getByLabel('已掌握技能').fill('Python、SQL、MySQL')
+  await page.getByLabel('偏好城市').fill('长沙、衡阳')
+  await page.getByLabel('企业就业', { exact: true }).check()
+  await page.getByLabel('升学', { exact: true }).check()
+  await page.getByLabel('事业单位', { exact: true }).check()
+  await page.getByRole('button', { name: '保存新版本 →' }).click()
+  await expect(page.getByRole('status')).toContainText('已保存')
+  await expect(page.getByText('数据工程搭建', { exact: true })).toBeVisible()
+  await page.goto('/interests')
+  await expect(page.locator('.question-item')).toHaveCount(30)
+  for (const group of ['R', 'I', 'A', 'S', 'E', 'C']) {
+    for (let i = 1; i <= 5; i++) await page.locator(`input[name="${group}${i}"]`).nth(group === 'I' ? 4 : 1).check()
+  }
+  await page.getByRole('checkbox', { name: /我自愿填写/ }).check()
+  await page.getByRole('button', { name: '生成我的探索伙伴 →' }).click()
+  await expect(page.getByRole('heading', { name: '研究小猫头鹰', exact: true })).toBeVisible()
+  await expect(page.getByRole('img', { name: '研究小猫头鹰的动物拟人化形象' })).toBeVisible()
+  await expect(page.getByRole('img', { name: /职业活动兴趣六维条形图/ })).toBeVisible()
+  await page.getByRole('button', { name: '选择展示伙伴' }).click()
+  await page.getByRole('button', { name: '选择实干小浣熊' }).click()
+  await expect(page.getByRole('heading', { name: '实干小浣熊', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '隐藏伙伴' }).click()
+  await expect(page.getByText('你已隐藏探索伙伴。', { exact: false })).toBeVisible()
+  await page.getByRole('button', { name: '重新显示伙伴' }).click()
+  await expect(page.getByRole('heading', { name: '实干小浣熊', exact: true })).toBeVisible()
+  await page.screenshot({ path: '../.local/interests-desktop.png', fullPage: true })
+  await page.goto('/decisions')
+  const generate = page.getByRole('button', { name: '生成路径比较与行动计划 →' })
+  await expect(generate).toBeEnabled()
+  await generate.click()
+  await expect(page.locator('.decision-path-card')).toHaveCount(3)
+  await expect(page.locator('.comparison-card').first()).toBeVisible()
+  const progress = page.locator('.action-row select').first()
+  await progress.selectOption('done')
+  await expect(progress).toHaveValue('done')
+  await page.screenshot({ path: '../.local/decisions-desktop.png', fullPage: true })
+  await page.setViewportSize({ width: 390, height: 844 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.screenshot({ path: '../.local/decisions-mobile.png', fullPage: true })
+  await page.goto('/interests')
+  const latest = page.locator('.timeline-item').first()
+  await latest.locator('summary').click()
+  await latest.getByRole('button', { name: '撤回这份问卷' }).click()
+  await latest.getByRole('button', { name: '确认撤回' }).click()
+  await expect(page.getByRole('status')).toContainText('决策记录及其行动进度')
+  expect(errors).toEqual([])
+})
+
+test('six distinct charts, aggregated tables and CSV export work on a phone', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', e => errors.push(e.message))
+  await page.goto('/analytics')
+  await page.getByRole('button', { name: '模拟演示', exact: true }).click()
+  const labels = ['机会公告发展路径占比', '机会公告城市数量排名', '各月发布机会公告数量',
+    '各城市不同发展路径公告数量', '城市和技能公告提及数量热力图', '机会公告技能提及数量矩形树图']
+  for (const label of labels) await expect(page.getByRole('img', { name: label, exact: true })).toBeVisible()
+  await page.screenshot({ path: '../.local/analytics-desktop.png', fullPage: true })
+  const downloadEvent = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出统计 CSV ↓' }).click()
+  const download = await downloadEvent
+  expect(download.suggestedFilename()).toMatch(/career-analytics-demo-.*\.csv/)
+  await page.getByRole('button', { name: '表格', exact: true }).click()
+  await expect(page.locator('.analytics-chart-grid table')).toHaveCount(6)
+  await page.getByRole('button', { name: '图表', exact: true }).click()
+  await page.setViewportSize({ width: 390, height: 844 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.screenshot({ path: '../.local/analytics-mobile.png', fullPage: true })
+  expect(errors).toEqual([])
+})
+
+test('admin maps exported questionnaire columns and reimport skips duplicates', async ({ page }) => {
+  await signIn(page, true)
+  await page.goto('/admin')
+  await page.getByRole('button', { name: '问卷接入', exact: true }).click()
+  await page.getByLabel('问卷来源名称').fill('浏览器测试：问卷平台匿名导出')
+  const csv = '答卷编号,专业,毕业届次,同意授权,第1题,提交时间,姓名\n' +
+    '1001,数据科学与大数据技术,2027,是,5,2026-10-13,应被排除的测试姓名\n'
+  await page.getByLabel('问卷记录内容').fill(csv)
+  await page.getByText('问卷平台 CSV 列映射（可选）', { exact: true }).click()
+  await page.getByLabel('标准字段 → 导出列名（JSON 对象）').fill('{"R1":"第1题"}')
+  await page.getByLabel('忽略列（逗号分隔）').fill('提交时间')
+  await page.getByRole('button', { name: '清洗并导入问卷', exact: true }).click()
+  await expect(page.getByRole('heading', { name: /问卷质量报告/ })).toBeVisible()
+  await page.getByRole('button', { name: '清洗并导入问卷', exact: true }).click()
+  await expect(page.getByRole('heading', { name: /问卷质量报告/ })).toBeVisible()
+  await page.getByRole('button', { name: '衡阳公告采集', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '衡阳公开公告采集', exact: true })).toBeVisible()
+  await expect(page.getByLabel('采集来源')).not.toHaveValue('')
+  await page.screenshot({ path: '../.local/admin-data-workspace.png', fullPage: true })
+})
+
+test('an old demo comparison cannot overwrite newly selected public mode', async ({ page }) => {
+  await signIn(page)
+  await page.getByLabel('演示数据', { exact: true }).check()
+  await page.goto('/decisions')
+  await expect(page.getByRole('button', { name: '生成路径比较与行动计划 →' })).toBeEnabled()
+  let release, started
+  const delayed = new Promise(resolve => { release = resolve })
+  const requestStarted = new Promise(resolve => { started = resolve })
+  await page.route('**/api/decisions/compare?data_kind=demo', async route => {
+    const response = await route.fetch()
+    started()
+    await delayed
+    await route.fulfill({ response })
+  })
+  const responseEvent = page.waitForResponse(r => r.url().includes('/decisions/compare?data_kind=demo'))
+  await page.getByRole('button', { name: '生成路径比较与行动计划 →' }).click()
+  await requestStarted
+  await page.getByLabel('演示数据', { exact: true }).uncheck()
+  await expect(page.getByRole('button', { name: '生成路径比较与行动计划 →' })).toBeEnabled()
+  release()
+  const response = await responseEvent
+  await response.finished()
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  await expect(page.locator('.comparison-card')).toHaveCount(0)
+  await expect(page.getByText('当前使用模拟机会。', { exact: false })).toHaveCount(0)
+})

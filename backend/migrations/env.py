@@ -1,6 +1,7 @@
 from alembic import context
 from app.database import Base, engine
 from app import models  # noqa: F401 - register metadata
+from app import interest_models, decision_models, crawl_models  # noqa: F401
 
 if context.is_offline_mode():
     raise RuntimeError('Use online migrations with the configured local database')

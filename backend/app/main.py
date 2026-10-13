@@ -5,7 +5,7 @@ from datetime import date, timedelta
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -14,28 +14,10 @@ from .models import AuditEvent, Experience, IngestionBatch, LoginSession, Opport
 from .schemas import Credentials, ExperienceInput, ImportInput, ModerationInput, OpportunityInput, ProfileInput, Register
 from .security import hash_password, token_hash, verify_password
 from .services import PATH_LABELS, import_outcomes, normalize_city, normalize_skill, opportunity_dict, profile_dict, score_opportunity
+from .auth import administrator, bearer, current_user
 
-app = FastAPI(title='学生职业发展辅助决策平台', version='0.1.0')
-bearer = HTTPBearer(auto_error=False)
+app = FastAPI(title='学生职业发展辅助决策平台', version='0.2.0')
 DUMMY_PASSWORD_HASH = hash_password('unavailable-account-placeholder')
-
-
-def current_user(auth: HTTPAuthorizationCredentials | None = Depends(bearer), db=Depends(get_db)):
-    if not auth:
-        raise HTTPException(401, '请先登录')
-    session = db.get(LoginSession, token_hash(auth.credentials))
-    if not session or session.expires_at <= now():
-        raise HTTPException(401, '登录已过期，请重新登录')
-    user = db.get(User, session.user_id)
-    if not user:
-        raise HTTPException(401, '账户不存在')
-    return user
-
-
-def administrator(user=Depends(current_user)):
-    if user.role != 'admin':
-        raise HTTPException(403, '仅管理员可执行此操作')
-    return user
 
 
 def user_dict(user):
@@ -46,6 +28,11 @@ def user_dict(user):
 def health(db=Depends(get_db)):
     try:
         db.execute(select(User.id).limit(1))
+        from .interest_models import InterestResponse
+        from .decision_models import DecisionRun
+        from .crawl_models import CrawlRun
+        for model in (InterestResponse, DecisionRun, CrawlRun):
+            db.execute(select(model.id).limit(1))
     except SQLAlchemyError:
         raise HTTPException(503, '数据库未就绪，请检查本地配置并运行数据库迁移')
     return {'status': 'ok', 'database': db.bind.dialect.name, 'version': app.version}
@@ -322,3 +309,14 @@ def moderate(post_id: int, payload: ModerationInput, user=Depends(administrator)
 def audit(user=Depends(administrator), db=Depends(get_db)):
     return [{k: getattr(e, k) for k in ['id', 'actor_id', 'action', 'target_id', 'created_at']}
             for e in db.scalars(select(AuditEvent).order_by(AuditEvent.id.desc()).limit(100))]
+
+
+from .analytics import router as analytics_router
+from .interests import router as interests_router
+from .decisions import router as decisions_router
+from .crawling import router as crawling_router
+
+app.include_router(analytics_router)
+app.include_router(interests_router)
+app.include_router(decisions_router)
+app.include_router(crawling_router)
