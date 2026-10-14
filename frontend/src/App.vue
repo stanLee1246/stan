@@ -17,6 +17,7 @@ async function signOut() {
       <div class="nav-caption">你的发展空间</div>
       <nav @click="menuOpen = false">
         <RouterLink to="/"><span>◈</span>发展总览</RouterLink>
+        <RouterLink to="/journey"><span>➝</span>使用路线</RouterLink>
         <RouterLink to="/school"><span>▦</span>学校概况</RouterLink>
         <RouterLink to="/profile"><span>◎</span>个人画像</RouterLink>
         <RouterLink to="/interests"><span>✦</span>职业探索</RouterLink>
@@ -25,6 +26,8 @@ async function signOut() {
         <RouterLink to="/opportunities"><span>↗</span>发展机会</RouterLink>
         <RouterLink to="/experiences"><span>☷</span>校友经验</RouterLink>
         <RouterLink v-if="auth.user?.role === 'admin'" to="/admin"><span>▤</span>数据工作台</RouterLink>
+        <RouterLink v-if="auth.user?.role === 'admin'" to="/admin/surveys"><span>⇧</span>问卷导入</RouterLink>
+        <RouterLink v-if="auth.user?.role === 'admin'" to="/data-pipeline"><span>⛁</span>数据加工全景</RouterLink>
       </nav>
       <div class="sidebar-note"><span class="tiny-dot"></span> 多一种选择，多一份准备<p>从了解自己开始，探索适合你的发展路径。</p></div>
       <div class="sidebar-footer">湖南交通工程学院<br>学生职业发展辅助决策平台</div>

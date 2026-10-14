@@ -170,6 +170,14 @@ def test_import_requires_authorization_and_correct_header(client,admin):
     assert r.status_code == 422
 
 
+def test_malformed_outcome_header_is_validation_error_without_batch(client, admin):
+    result = client.post('/api/admin/import/outcomes', headers=admin,
+                         json={'source_name': 'broken-header', 'data_kind': 'demo',
+                               'csv_content': '"student_key,major\nmissing-closing-quote'})
+    assert result.status_code == 422
+    assert client.get('/api/admin/batches', headers=admin).json() == []
+
+
 def test_latest_observation_not_double_counted(client,admin):
     do_import(client,admin,[outcome_row(0),outcome_row(0,observed_on='2026-01-01',path='postgraduate')])
     d=client.get('/api/dashboard?data_kind=demo').json()

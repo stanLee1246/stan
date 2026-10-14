@@ -200,3 +200,89 @@ def test_global_evaluation_pool_is_bounded_and_default_shortlist_is_balanced(cli
     assert len(result['comparisons']) == 6
     assert set(c['opportunity']['path'] for c in result['comparisons']) == {'employment', 'postgraduate'}
     assert sum(p['candidate_count'] for p in result['paths']) == 100
+
+
+def test_sensitivity_exposes_skill_city_tradeoff_within_frozen_shortlist(client, student, admin):
+    client.put('/api/profile', headers=student, json=student_profile())
+    skill_match = add_opportunity(client, admin, source_record_id='skill-choice',
+                                  source_url='https://example.com/skill-choice', city='广州', skills=['Python', 'SQL'])
+    city_match = add_opportunity(client, admin, source_record_id='city-choice',
+                                 source_url='https://example.com/city-choice', skills=['Python', 'Java'])
+    # This stronger candidate stays outside the explicit two-item shortlist.
+    add_opportunity(client, admin, source_record_id='outside-shortlist',
+                    source_url='https://example.com/outside-shortlist', skills=['Python', 'SQL'])
+    result = compare(client, student, opportunity_ids=[skill_match['id'], city_match['id']])
+    sensitivity = result['sensitivity']
+    assert sensitivity['scope'] == 'displayed_comparisons_within_path'
+    path = sensitivity['paths'][0]
+    assert path['path'] == 'employment' and path['compared_count'] == 2
+    by_id = {item['opportunity_id']: item for item in path['stability']}
+    assert by_id[skill_match['id']]['ranks'] == {'current': 2, 'balanced': 2, 'skills_first': 1, 'city_first': 2}
+    assert by_id[city_match['id']]['ranks'] == {'current': 1, 'balanced': 1, 'skills_first': 2, 'city_first': 1}
+    assert all(item['status'] == 'sensitive' and item['rank_changed'] is True for item in by_id.values())
+    for scenario in path['scenario_results']:
+        assert {entry['opportunity_id'] for entry in scenario['rankings']} == set(by_id)
+    assert result['decision_context']['selected_paths'] == ['employment', 'postgraduate']
+    assert result['decision_context']['questionnaire_optional']
+    assert result['decision_context']['missing_fields'] == []
+    assert any('第 14 天：回看证据' in action['title'] for action in result['action_plan'])
+
+
+def test_sensitivity_equal_scores_tie_and_never_rank_different_paths_together(client, student, admin):
+    client.put('/api/profile', headers=student, json=student_profile())
+    first = add_opportunity(client, admin)
+    second = add_opportunity(client, admin, source_record_id='tie-second', source_url='https://example.com/tie-second')
+    third = add_opportunity(client, admin, source_record_id='different-path',
+                            source_url='https://example.com/different-path', path='postgraduate')
+    result = compare(client, student, opportunity_ids=[first['id'], second['id'], third['id']])
+    by_path = {path['path']: path for path in result['sensitivity']['paths']}
+    employment = by_path['employment']['stability']
+    assert all(set(item['ranks'].values()) == {1} and item['status'] == 'stable' for item in employment)
+    single = by_path['postgraduate']['stability'][0]
+    assert single['status'] == 'insufficient_peers' and single['rank_changed'] is None
+
+
+def test_sensitivity_preserves_unknowns_and_hard_exclusions(client, student, admin):
+    client.put('/api/profile', headers=student, json=student_profile(skills=[], cities=[]))
+    unknown = add_opportunity(client, admin)
+    excluded = add_opportunity(client, admin, source_record_id='expired-choice',
+                               source_url='https://example.com/expired-choice',
+                               deadline=str(date.today() - timedelta(days=1)))
+    result = compare(client, student, opportunity_ids=[unknown['id'], excluded['id']])
+    path = result['sensitivity']['paths'][0]
+    by_id = {item['opportunity_id']: item for item in path['stability']}
+    assert by_id[unknown['id']]['status'] == 'insufficient_evidence'
+    assert by_id[unknown['id']]['missing_dimensions'] == ['技能覆盖', '城市偏好']
+    assert by_id[excluded['id']]['status'] == 'excluded'
+    assert all(entry['score'] is None and entry['rank'] is None
+               for scenario in path['scenario_results'] for entry in scenario['rankings'])
+    assert result['decision_context']['missing_fields'] == ['自报技能', '城市偏好']
+
+
+def test_sensitivity_is_immutable_and_reports_different_evidence_coverage(client, student, admin):
+    client.put('/api/profile', headers=student, json=student_profile())
+    first = add_opportunity(client, admin)
+    second = add_opportunity(client, admin, source_record_id='no-major', source_url='https://example.com/no-major', majors=[])
+    result = compare(client, student, opportunity_ids=[first['id'], second['id']])
+    assert result['sensitivity']['paths'][0]['different_evidence_coverage']
+    missing = result['sensitivity']['paths'][0]['stability'][1]
+    assert missing['missing_dimensions'] == ['专业条件']
+    add_opportunity(client, admin, skills=['Java'], city='广州')
+    client.put('/api/profile', headers=student, json=student_profile(expected_version=1, cities=['广州']))
+    action_id = result['action_plan'][0]['id']
+    saved = client.patch(f'/api/decisions/{result["id"]}/actions/{action_id}',
+                         headers=student, json={'status': 'done'}).json()
+    assert saved['sensitivity'] == result['sensitivity']
+    assert saved['decision_context'] == result['decision_context']
+    assert saved['decision_context']['profile_summary']['cities'] == ['长沙']
+
+
+def test_sensitivity_does_not_claim_stability_if_current_weights_only_activate_one_factor(client, student, admin):
+    client.put('/api/profile', headers=student, json=student_profile())
+    add_opportunity(client, admin)
+    add_opportunity(client, admin, source_record_id='single-weight-peer', source_url='https://example.com/single-weight-peer')
+    result = compare(client, student, weights={'skills': 1, 'city': 0, 'major': 0})
+    for entry in result['sensitivity']['paths'][0]['stability']:
+        assert entry['ranks']['current'] is None
+        assert entry['ranks']['balanced'] == 1
+        assert entry['status'] == 'insufficient_evidence' and entry['rank_changed'] is None

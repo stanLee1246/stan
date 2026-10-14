@@ -19,3 +19,4 @@ watch(() => props.option, async option => { await nextTick(); chart?.setOption({
 onBeforeUnmount(() => { observer?.disconnect(); chart?.dispose() })
 </script>
 <template><div ref="element" class="chart" role="img" :aria-label="label"></div></template>
+<style scoped>.chart{min-width:0;max-width:100%;overflow:hidden}</style>

@@ -1,0 +1,996 @@
+{
+  "schema_version": "school-export-v1",
+  "source": {
+    "file_name": "高校教职工与专业数据导出.docx",
+    "file_sha256": "a6a5f1ef51ec8a8453de2ce33546458321be69921f2ece7e04d3e5770cf38170",
+    "exported_at": "2026-10-14 11:44:01",
+    "timezone": null,
+    "database": "hengyang_campus",
+    "tables": [
+      "t_university",
+      "t_university_major"
+    ],
+    "provided_by": "用户上传",
+    "verification_status": "unverified",
+    "source_type": "user_supplied",
+    "city": "衡阳",
+    "focus_university": "湖南交通工程学院",
+    "declared_university_count": 13,
+    "declared_major_count": 31,
+    "declared_major_students": 12440,
+    "employment_definition": null,
+    "employment_cohort": null,
+    "employment_observed_on": null,
+    "employment_denominator": null,
+    "source_url": null
+  },
+  "universities": [
+    {
+      "source_order": 1,
+      "name": "南华大学",
+      "institution_type": "本科公办",
+      "district": "蒸湘区",
+      "students": 41100,
+      "staff": 4000,
+      "founded_year": 1958,
+      "dataset_focus": false,
+      "description": "省属综合性大学，核学科特色鲜明，在校师生约4.5万人"
+    },
+    {
+      "source_order": 2,
+      "name": "衡阳师范学院",
+      "institution_type": "本科公办",
+      "district": "珠晖区",
+      "students": 23000,
+      "staff": 1700,
+      "founded_year": 1904,
+      "dataset_focus": false,
+      "description": "师范类本科院校，全日制在校学生2.3万余人"
+    },
+    {
+      "source_order": 3,
+      "name": "湖南工学院",
+      "institution_type": "本科公办",
+      "district": "珠晖区",
+      "students": 21000,
+      "staff": 1500,
+      "founded_year": 1975,
+      "dataset_focus": false,
+      "description": "工科为主的应用型本科院校，约2.1万人"
+    },
+    {
+      "source_order": 4,
+      "name": "湖南财经工业职业技术学院",
+      "institution_type": "高职公办",
+      "district": "珠晖区",
+      "students": 15000,
+      "staff": 800,
+      "founded_year": 1958,
+      "dataset_focus": false,
+      "description": "财经+工业复合特色高职，建湘文化街区主要服务对象，1.5万师生"
+    },
+    {
+      "source_order": 5,
+      "name": "湖南环境生物职业技术学院",
+      "institution_type": "高职公办",
+      "district": "石鼓区",
+      "students": 14000,
+      "staff": 750,
+      "founded_year": 1975,
+      "dataset_focus": false,
+      "description": "农林生物环保特色高职"
+    },
+    {
+      "source_order": 6,
+      "name": "湖南高速铁路职业技术学院",
+      "institution_type": "高职公办",
+      "district": "珠晖区",
+      "students": 13000,
+      "staff": 700,
+      "founded_year": 1951,
+      "dataset_focus": false,
+      "description": "铁路行业高职院校，约1.3万人，就业面向铁路系统"
+    },
+    {
+      "source_order": 7,
+      "name": "湖南交通工程学院",
+      "institution_type": "本科民办",
+      "district": "蒸湘区",
+      "students": 12000,
+      "staff": 900,
+      "founded_year": 1991,
+      "dataset_focus": true,
+      "description": "交通工程特色民办本科，约1.2万人，重点建设数据"
+    },
+    {
+      "source_order": 8,
+      "name": "南华大学船山学院",
+      "institution_type": "独立学院",
+      "district": "蒸湘区",
+      "students": 8000,
+      "staff": 400,
+      "founded_year": 2001,
+      "dataset_focus": false,
+      "description": "南华大学举办的独立学院"
+    },
+    {
+      "source_order": 9,
+      "name": "衡阳师范学院南岳学院",
+      "institution_type": "独立学院",
+      "district": "珠晖区",
+      "students": 7000,
+      "staff": 350,
+      "founded_year": 2002,
+      "dataset_focus": false,
+      "description": "衡阳师范学院举办的独立学院"
+    },
+    {
+      "source_order": 10,
+      "name": "衡阳幼儿师范高等专科学校",
+      "institution_type": "高职公办",
+      "district": "蒸湘区",
+      "students": 6000,
+      "staff": 400,
+      "founded_year": 2020,
+      "dataset_focus": false,
+      "description": "幼儿师范类高职"
+    },
+    {
+      "source_order": 11,
+      "name": "湖南工商职业学院",
+      "institution_type": "高职民办",
+      "district": "蒸湘区",
+      "students": 6000,
+      "staff": 350,
+      "founded_year": 1989,
+      "dataset_focus": false,
+      "description": "民办综合性高职"
+    },
+    {
+      "source_order": 12,
+      "name": "衡阳科技职业学院",
+      "institution_type": "高职民办",
+      "district": "珠晖区",
+      "students": 5000,
+      "staff": 300,
+      "founded_year": 2021,
+      "dataset_focus": false,
+      "description": "民办科技类高职"
+    },
+    {
+      "source_order": 13,
+      "name": "衡阳开放大学",
+      "institution_type": "成人高校",
+      "district": "雁峰区",
+      "students": 4000,
+      "staff": 300,
+      "founded_year": 1979,
+      "dataset_focus": false,
+      "description": "成人高等教育，含社区教育办学点"
+    }
+  ],
+  "majors": [
+    {
+      "source_order": 1,
+      "name": "电气工程及其自动化",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 760,
+      "reported_student_share": "6.11%",
+      "reported_employment_rate": "93.10%"
+    },
+    {
+      "source_order": 2,
+      "name": "机械设计制造及其自动化",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 700,
+      "reported_student_share": "5.63%",
+      "reported_employment_rate": "92.30%"
+    },
+    {
+      "source_order": 3,
+      "name": "计算机科学与技术",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 650,
+      "reported_student_share": "5.23%",
+      "reported_employment_rate": "94.20%"
+    },
+    {
+      "source_order": 4,
+      "name": "软件工程",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 600,
+      "reported_student_share": "4.82%",
+      "reported_employment_rate": "94.80%"
+    },
+    {
+      "source_order": 5,
+      "name": "护理学",
+      "discipline": "医学",
+      "level": "本科",
+      "students": 560,
+      "reported_student_share": "4.50%",
+      "reported_employment_rate": "95.40%"
+    },
+    {
+      "source_order": 6,
+      "name": "车辆工程",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 500,
+      "reported_student_share": "4.02%",
+      "reported_employment_rate": "91.60%"
+    },
+    {
+      "source_order": 7,
+      "name": "土木工程",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 470,
+      "reported_student_share": "3.78%",
+      "reported_employment_rate": "88.90%"
+    },
+    {
+      "source_order": 8,
+      "name": "工程造价",
+      "discipline": "管理学",
+      "level": "本科",
+      "students": 430,
+      "reported_student_share": "3.46%",
+      "reported_employment_rate": "92.70%"
+    },
+    {
+      "source_order": 9,
+      "name": "电子信息工程",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 420,
+      "reported_student_share": "3.38%",
+      "reported_employment_rate": "90.80%"
+    },
+    {
+      "source_order": 10,
+      "name": "财务管理",
+      "discipline": "管理学",
+      "level": "本科",
+      "students": 410,
+      "reported_student_share": "3.30%",
+      "reported_employment_rate": "91.20%"
+    },
+    {
+      "source_order": 11,
+      "name": "汽车服务工程",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 380,
+      "reported_student_share": "3.05%",
+      "reported_employment_rate": "90.20%"
+    },
+    {
+      "source_order": 12,
+      "name": "数据科学与大数据技术",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 380,
+      "reported_student_share": "3.05%",
+      "reported_employment_rate": "93.60%"
+    },
+    {
+      "source_order": 13,
+      "name": "会计学",
+      "discipline": "管理学",
+      "level": "本科",
+      "students": 380,
+      "reported_student_share": "3.05%",
+      "reported_employment_rate": "91.80%"
+    },
+    {
+      "source_order": 14,
+      "name": "物流管理",
+      "discipline": "管理学",
+      "level": "本科",
+      "students": 370,
+      "reported_student_share": "2.97%",
+      "reported_employment_rate": "89.70%"
+    },
+    {
+      "source_order": 15,
+      "name": "物联网工程",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 330,
+      "reported_student_share": "2.65%",
+      "reported_employment_rate": "89.50%"
+    },
+    {
+      "source_order": 16,
+      "name": "道路桥梁与渡河工程",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 330,
+      "reported_student_share": "2.65%",
+      "reported_employment_rate": "89.10%"
+    },
+    {
+      "source_order": 17,
+      "name": "交通运输",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 330,
+      "reported_student_share": "2.65%",
+      "reported_employment_rate": "88.40%"
+    },
+    {
+      "source_order": 18,
+      "name": "交通工程",
+      "discipline": "工学",
+      "level": "本科",
+      "students": 290,
+      "reported_student_share": "2.33%",
+      "reported_employment_rate": "87.90%"
+    },
+    {
+      "source_order": 19,
+      "name": "电子商务",
+      "discipline": "管理学",
+      "level": "本科",
+      "students": 290,
+      "reported_student_share": "2.33%",
+      "reported_employment_rate": "90.60%"
+    },
+    {
+      "source_order": 20,
+      "name": "工程管理",
+      "discipline": "管理学",
+      "level": "本科",
+      "students": 280,
+      "reported_student_share": "2.25%",
+      "reported_employment_rate": "90.50%"
+    },
+    {
+      "source_order": 21,
+      "name": "国际经济与贸易",
+      "discipline": "经济学",
+      "level": "本科",
+      "students": 230,
+      "reported_student_share": "1.85%",
+      "reported_employment_rate": "86.50%"
+    },
+    {
+      "source_order": 22,
+      "name": "市场营销",
+      "discipline": "管理学",
+      "level": "本科",
+      "students": 230,
+      "reported_student_share": "1.85%",
+      "reported_employment_rate": "87.20%"
+    },
+    {
+      "source_order": 23,
+      "name": "英语",
+      "discipline": "文学",
+      "level": "本科",
+      "students": 200,
+      "reported_student_share": "1.61%",
+      "reported_employment_rate": "85.30%"
+    },
+    {
+      "source_order": 24,
+      "name": "金融工程",
+      "discipline": "经济学",
+      "level": "本科",
+      "students": 190,
+      "reported_student_share": "1.53%",
+      "reported_employment_rate": "86.10%"
+    },
+    {
+      "source_order": 25,
+      "name": "护理",
+      "discipline": "医学",
+      "level": "专科",
+      "students": 450,
+      "reported_student_share": "3.62%",
+      "reported_employment_rate": "95.10%"
+    },
+    {
+      "source_order": 26,
+      "name": "汽车检测与维修技术",
+      "discipline": "工学",
+      "level": "专科",
+      "students": 430,
+      "reported_student_share": "3.46%",
+      "reported_employment_rate": "93.50%"
+    },
+    {
+      "source_order": 27,
+      "name": "大数据与会计",
+      "discipline": "管理学",
+      "level": "专科",
+      "students": 420,
+      "reported_student_share": "3.38%",
+      "reported_employment_rate": "91.90%"
+    },
+    {
+      "source_order": 28,
+      "name": "计算机应用技术",
+      "discipline": "工学",
+      "level": "专科",
+      "students": 400,
+      "reported_student_share": "3.22%",
+      "reported_employment_rate": "93.80%"
+    },
+    {
+      "source_order": 29,
+      "name": "机电一体化技术",
+      "discipline": "工学",
+      "level": "专科",
+      "students": 380,
+      "reported_student_share": "3.05%",
+      "reported_employment_rate": "92.10%"
+    },
+    {
+      "source_order": 30,
+      "name": "城市轨道交通运营管理",
+      "discipline": "工学",
+      "level": "专科",
+      "students": 340,
+      "reported_student_share": "2.73%",
+      "reported_employment_rate": "92.60%"
+    },
+    {
+      "source_order": 31,
+      "name": "道路桥梁工程技术",
+      "discipline": "工学",
+      "level": "专科",
+      "students": 310,
+      "reported_student_share": "2.49%",
+      "reported_employment_rate": "90.70%"
+    }
+  ],
+  "discipline_summary": [
+    {
+      "source_order": 1,
+      "name": "工学",
+      "major_count": 18,
+      "students": 8000,
+      "reported_student_share": "64.31%"
+    },
+    {
+      "source_order": 2,
+      "name": "管理学",
+      "major_count": 8,
+      "students": 2810,
+      "reported_student_share": "22.59%"
+    },
+    {
+      "source_order": 3,
+      "name": "医学",
+      "major_count": 2,
+      "students": 1010,
+      "reported_student_share": "8.12%"
+    },
+    {
+      "source_order": 4,
+      "name": "经济学",
+      "major_count": 2,
+      "students": 420,
+      "reported_student_share": "3.38%"
+    },
+    {
+      "source_order": 5,
+      "name": "文学",
+      "major_count": 1,
+      "students": 200,
+      "reported_student_share": "1.61%"
+    }
+  ],
+  "raw_export": {
+    "paragraphs": [
+      "高校教职工与专业数据可视化模块",
+      "数据导出文档",
+      "—— 衡阳市大学生城市生活数据可视化与互动服务平台 ——",
+      "数据来源：本地 MySQL 数据库 hengyang_campus（t_university / t_university_major）",
+      "导出时间：2026-10-14 11:44:01　｜　高校数量：13 所　｜　重点建设高校专业数：31 个",
+      "一、衡阳市高校基本信息（按在校学生数排序）",
+      "二、湖南交通工程学院专业明细（重点建设高校，共 31 个专业）",
+      "在校学生合计：12440 人。专业数据按层次（本科 / 专科）与在读人数排序。",
+      "三、湖南交通工程学院学科门类分布",
+      "说明：本表数据由系统数据库实时导出，含在校学生数、教职工数、专业在读人数及就业率等核心指标，可用于毕业设计论文附录、汇报材料及数据复核。"
+    ],
+    "tables": [
+      [
+        [
+          "序号",
+          "高校名称",
+          "办学类型",
+          "所在区",
+          "在校学生(人)",
+          "教职工(人)",
+          "建校年份",
+          "重点建设",
+          "简介"
+        ],
+        [
+          "1",
+          "南华大学",
+          "本科公办",
+          "蒸湘区",
+          "41100",
+          "4000",
+          "1958",
+          "",
+          "省属综合性大学，核学科特色鲜明，在校师生约4.5万人"
+        ],
+        [
+          "2",
+          "衡阳师范学院",
+          "本科公办",
+          "珠晖区",
+          "23000",
+          "1700",
+          "1904",
+          "",
+          "师范类本科院校，全日制在校学生2.3万余人"
+        ],
+        [
+          "3",
+          "湖南工学院",
+          "本科公办",
+          "珠晖区",
+          "21000",
+          "1500",
+          "1975",
+          "",
+          "工科为主的应用型本科院校，约2.1万人"
+        ],
+        [
+          "4",
+          "湖南财经工业职业技术学院",
+          "高职公办",
+          "珠晖区",
+          "15000",
+          "800",
+          "1958",
+          "",
+          "财经+工业复合特色高职，建湘文化街区主要服务对象，1.5万师生"
+        ],
+        [
+          "5",
+          "湖南环境生物职业技术学院",
+          "高职公办",
+          "石鼓区",
+          "14000",
+          "750",
+          "1975",
+          "",
+          "农林生物环保特色高职"
+        ],
+        [
+          "6",
+          "湖南高速铁路职业技术学院",
+          "高职公办",
+          "珠晖区",
+          "13000",
+          "700",
+          "1951",
+          "",
+          "铁路行业高职院校，约1.3万人，就业面向铁路系统"
+        ],
+        [
+          "7",
+          "湖南交通工程学院",
+          "本科民办",
+          "蒸湘区",
+          "12000",
+          "900",
+          "1991",
+          "是",
+          "交通工程特色民办本科，约1.2万人，重点建设数据"
+        ],
+        [
+          "8",
+          "南华大学船山学院",
+          "独立学院",
+          "蒸湘区",
+          "8000",
+          "400",
+          "2001",
+          "",
+          "南华大学举办的独立学院"
+        ],
+        [
+          "9",
+          "衡阳师范学院南岳学院",
+          "独立学院",
+          "珠晖区",
+          "7000",
+          "350",
+          "2002",
+          "",
+          "衡阳师范学院举办的独立学院"
+        ],
+        [
+          "10",
+          "衡阳幼儿师范高等专科学校",
+          "高职公办",
+          "蒸湘区",
+          "6000",
+          "400",
+          "2020",
+          "",
+          "幼儿师范类高职"
+        ],
+        [
+          "11",
+          "湖南工商职业学院",
+          "高职民办",
+          "蒸湘区",
+          "6000",
+          "350",
+          "1989",
+          "",
+          "民办综合性高职"
+        ],
+        [
+          "12",
+          "衡阳科技职业学院",
+          "高职民办",
+          "珠晖区",
+          "5000",
+          "300",
+          "2021",
+          "",
+          "民办科技类高职"
+        ],
+        [
+          "13",
+          "衡阳开放大学",
+          "成人高校",
+          "雁峰区",
+          "4000",
+          "300",
+          "1979",
+          "",
+          "成人高等教育，含社区教育办学点"
+        ]
+      ],
+      [
+        [
+          "序号",
+          "专业名称",
+          "学科门类",
+          "层次",
+          "在读人数(人)",
+          "人数占比",
+          "就业率"
+        ],
+        [
+          "1",
+          "电气工程及其自动化",
+          "工学",
+          "本科",
+          "760",
+          "6.11%",
+          "93.10%"
+        ],
+        [
+          "2",
+          "机械设计制造及其自动化",
+          "工学",
+          "本科",
+          "700",
+          "5.63%",
+          "92.30%"
+        ],
+        [
+          "3",
+          "计算机科学与技术",
+          "工学",
+          "本科",
+          "650",
+          "5.23%",
+          "94.20%"
+        ],
+        [
+          "4",
+          "软件工程",
+          "工学",
+          "本科",
+          "600",
+          "4.82%",
+          "94.80%"
+        ],
+        [
+          "5",
+          "护理学",
+          "医学",
+          "本科",
+          "560",
+          "4.50%",
+          "95.40%"
+        ],
+        [
+          "6",
+          "车辆工程",
+          "工学",
+          "本科",
+          "500",
+          "4.02%",
+          "91.60%"
+        ],
+        [
+          "7",
+          "土木工程",
+          "工学",
+          "本科",
+          "470",
+          "3.78%",
+          "88.90%"
+        ],
+        [
+          "8",
+          "工程造价",
+          "管理学",
+          "本科",
+          "430",
+          "3.46%",
+          "92.70%"
+        ],
+        [
+          "9",
+          "电子信息工程",
+          "工学",
+          "本科",
+          "420",
+          "3.38%",
+          "90.80%"
+        ],
+        [
+          "10",
+          "财务管理",
+          "管理学",
+          "本科",
+          "410",
+          "3.30%",
+          "91.20%"
+        ],
+        [
+          "11",
+          "汽车服务工程",
+          "工学",
+          "本科",
+          "380",
+          "3.05%",
+          "90.20%"
+        ],
+        [
+          "12",
+          "数据科学与大数据技术",
+          "工学",
+          "本科",
+          "380",
+          "3.05%",
+          "93.60%"
+        ],
+        [
+          "13",
+          "会计学",
+          "管理学",
+          "本科",
+          "380",
+          "3.05%",
+          "91.80%"
+        ],
+        [
+          "14",
+          "物流管理",
+          "管理学",
+          "本科",
+          "370",
+          "2.97%",
+          "89.70%"
+        ],
+        [
+          "15",
+          "物联网工程",
+          "工学",
+          "本科",
+          "330",
+          "2.65%",
+          "89.50%"
+        ],
+        [
+          "16",
+          "道路桥梁与渡河工程",
+          "工学",
+          "本科",
+          "330",
+          "2.65%",
+          "89.10%"
+        ],
+        [
+          "17",
+          "交通运输",
+          "工学",
+          "本科",
+          "330",
+          "2.65%",
+          "88.40%"
+        ],
+        [
+          "18",
+          "交通工程",
+          "工学",
+          "本科",
+          "290",
+          "2.33%",
+          "87.90%"
+        ],
+        [
+          "19",
+          "电子商务",
+          "管理学",
+          "本科",
+          "290",
+          "2.33%",
+          "90.60%"
+        ],
+        [
+          "20",
+          "工程管理",
+          "管理学",
+          "本科",
+          "280",
+          "2.25%",
+          "90.50%"
+        ],
+        [
+          "21",
+          "国际经济与贸易",
+          "经济学",
+          "本科",
+          "230",
+          "1.85%",
+          "86.50%"
+        ],
+        [
+          "22",
+          "市场营销",
+          "管理学",
+          "本科",
+          "230",
+          "1.85%",
+          "87.20%"
+        ],
+        [
+          "23",
+          "英语",
+          "文学",
+          "本科",
+          "200",
+          "1.61%",
+          "85.30%"
+        ],
+        [
+          "24",
+          "金融工程",
+          "经济学",
+          "本科",
+          "190",
+          "1.53%",
+          "86.10%"
+        ],
+        [
+          "25",
+          "护理",
+          "医学",
+          "专科",
+          "450",
+          "3.62%",
+          "95.10%"
+        ],
+        [
+          "26",
+          "汽车检测与维修技术",
+          "工学",
+          "专科",
+          "430",
+          "3.46%",
+          "93.50%"
+        ],
+        [
+          "27",
+          "大数据与会计",
+          "管理学",
+          "专科",
+          "420",
+          "3.38%",
+          "91.90%"
+        ],
+        [
+          "28",
+          "计算机应用技术",
+          "工学",
+          "专科",
+          "400",
+          "3.22%",
+          "93.80%"
+        ],
+        [
+          "29",
+          "机电一体化技术",
+          "工学",
+          "专科",
+          "380",
+          "3.05%",
+          "92.10%"
+        ],
+        [
+          "30",
+          "城市轨道交通运营管理",
+          "工学",
+          "专科",
+          "340",
+          "2.73%",
+          "92.60%"
+        ],
+        [
+          "31",
+          "道路桥梁工程技术",
+          "工学",
+          "专科",
+          "310",
+          "2.49%",
+          "90.70%"
+        ]
+      ],
+      [
+        [
+          "序号",
+          "学科门类",
+          "专业数(个)",
+          "在读人数(人)",
+          "人数占比"
+        ],
+        [
+          "1",
+          "工学",
+          "18",
+          "8000",
+          "64.31%"
+        ],
+        [
+          "2",
+          "管理学",
+          "8",
+          "2810",
+          "22.59%"
+        ],
+        [
+          "3",
+          "医学",
+          "2",
+          "1010",
+          "8.12%"
+        ],
+        [
+          "4",
+          "经济学",
+          "2",
+          "420",
+          "3.38%"
+        ],
+        [
+          "5",
+          "文学",
+          "1",
+          "200",
+          "1.61%"
+        ]
+      ]
+    ]
+  }
+}

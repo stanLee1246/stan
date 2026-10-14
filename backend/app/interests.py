@@ -428,7 +428,10 @@ def import_survey_csv(payload: SurveyCSVImport, user=Depends(administrator), db=
     if len(payload.csv_content.encode('utf-8')) > 500_000:
         raise HTTPException(413, '每批原始载荷不得超过 500 KB，请分批导入')
     reader = csv.DictReader(io.StringIO(payload.csv_content.lstrip('\ufeff')), strict=True)
-    columns = reader.fieldnames
+    try:
+        columns = reader.fieldnames
+    except csv.Error:
+        raise HTTPException(422, 'CSV 表头引号或分隔符损坏，请重新导出 CSV')
     if not columns or len(set(columns)) != len(columns) or any(len(column) > 300 for column in columns):
         raise HTTPException(422, 'CSV 表头缺失、重复或过长，请先确认 UTF-8 导出格式')
     mapping, ignored, export_mode = export_column_mapping(columns, payload)

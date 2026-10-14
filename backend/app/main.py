@@ -16,7 +16,7 @@ from .security import hash_password, token_hash, verify_password
 from .services import PATH_LABELS, import_outcomes, normalize_city, normalize_skill, opportunity_dict, profile_dict, score_opportunity
 from .auth import administrator, bearer, current_user
 
-app = FastAPI(title='学生职业发展辅助决策平台', version='0.2.0')
+app = FastAPI(title='学生职业发展辅助决策平台', version='0.3.0')
 DUMMY_PASSWORD_HASH = hash_password('unavailable-account-placeholder')
 
 
@@ -31,7 +31,9 @@ def health(db=Depends(get_db)):
         from .interest_models import InterestResponse
         from .decision_models import DecisionRun
         from .crawl_models import CrawlRun
-        for model in (InterestResponse, DecisionRun, CrawlRun):
+        from .school_models import SchoolDataset
+        from .pipeline_models import PipelineRefreshRun
+        for model in (InterestResponse, DecisionRun, CrawlRun, SchoolDataset, PipelineRefreshRun):
             db.execute(select(model.id).limit(1))
     except SQLAlchemyError:
         raise HTTPException(503, '数据库未就绪，请检查本地配置并运行数据库迁移')
@@ -78,9 +80,13 @@ def me(user=Depends(current_user)):
 
 
 @app.get('/api/dictionaries')
-def dictionaries():
+def dictionaries(db=Depends(get_db)):
+    from .school_models import SchoolDataset, UniversityMajorSnapshot
+    dataset_id = db.scalar(select(SchoolDataset.id).order_by(SchoolDataset.id.desc()).limit(1))
+    majors = list(db.scalars(select(UniversityMajorSnapshot.name).where(
+        UniversityMajorSnapshot.dataset_id == dataset_id).order_by(UniversityMajorSnapshot.source_order))) if dataset_id else []
     return {'paths': PATH_LABELS,
-            'majors': ['数据科学与大数据技术', '软件工程', '计算机科学与技术'],
+            'majors': list(dict.fromkeys(majors or ['数据科学与大数据技术', '软件工程', '计算机科学与技术'])),
             'cities': ['衡阳', '长沙', '广州', '深圳', '武汉'],
             'skills': ['Python', 'SQL', 'MySQL', 'pandas', 'Excel', 'Vue', 'ECharts', 'Java', 'Spark']}
 
@@ -315,8 +321,14 @@ from .analytics import router as analytics_router
 from .interests import router as interests_router
 from .decisions import router as decisions_router
 from .crawling import router as crawling_router
+from .school_data import router as school_data_router
+from .data_pipeline import router as data_pipeline_router
+from .survey_import import router as survey_import_router
 
 app.include_router(analytics_router)
 app.include_router(interests_router)
 app.include_router(decisions_router)
 app.include_router(crawling_router)
+app.include_router(school_data_router)
+app.include_router(data_pipeline_router)
+app.include_router(survey_import_router)

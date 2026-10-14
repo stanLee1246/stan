@@ -48,9 +48,9 @@ def import_outcomes(db, user_id, payload):
     if payload.data_kind == 'authorized' and not payload.authorized_consent:
         raise HTTPException(422, '导入真实逐人记录前必须确认已取得授权，并使用匿名标识')
     reader = csv.DictReader(io.StringIO(payload.csv_content.lstrip('\ufeff')), strict=True)
-    if not reader.fieldnames or len(set(reader.fieldnames)) != len(reader.fieldnames) or set(reader.fieldnames) != set(REQUIRED_COLUMNS):
-        raise HTTPException(422, 'CSV 表头必须与模板完全一致，不得包含姓名、电话等额外字段')
     try:
+        if not reader.fieldnames or len(set(reader.fieldnames)) != len(reader.fieldnames) or set(reader.fieldnames) != set(REQUIRED_COLUMNS):
+            raise HTTPException(422, 'CSV 表头必须与模板完全一致，不得包含姓名、电话等额外字段')
         rows = list(reader)
     except csv.Error:
         raise HTTPException(422, 'CSV 格式损坏，请使用 UTF-8 CSV 模板')

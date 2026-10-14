@@ -96,8 +96,17 @@ def main():
     if args.action == 'init-db':
         migrate()
         print(f'数据库迁移完成（{engine.dialect.name}）。')
+        from .school_data import import_bundled_school_data
+        with SessionLocal() as db:
+            import_bundled_school_data(db)
+        print('已载入用户提供的高校与专业资料，来源和统计口径可在学校概况核对。')
         if args.demo:
             seed_demo()
+            from .data_pipeline import refresh_warehouse
+            with SessionLocal() as db:
+                admin = db.scalar(select(User).where(User.username == 'demo_admin'))
+                refresh_warehouse(db, admin.id, 'demo')
+            print('已刷新模拟机会的仓库汇总与技能共现结果。')
     elif args.action == 'seed-demo':
         seed_demo()
     elif args.action == 'export-demo':

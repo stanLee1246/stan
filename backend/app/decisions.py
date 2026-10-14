@@ -21,13 +21,19 @@ from .services import PATH_LABELS, normalize_city, normalize_skill, opportunity_
 
 
 router = APIRouter(prefix='/api/decisions', tags=['辅助决策'])
-MODEL_VERSION = 'observed-decision-v1'
+MODEL_VERSION = 'observed-decision-v2'
 POOL_LIMIT = 100
 COMPARISON_LIMIT = 6
 DEGREES = {'junior_college': 0, 'bachelor': 1, 'master': 2, 'doctor': 3}
 NOTICE = ('这是基于当前自报画像和已观测条件的决策参考，匹配分不代表录用、录取或上岸概率。'
           '比较时同时查看观测维度和信息缺失，不同发展路径分别比较，不据此替你选择人生方向；'
           '报名资格和截止时间以来源原文为准。')
+FACTOR_LABELS = {'skills': '技能覆盖', 'city': '城市偏好', 'major': '专业条件'}
+SENSITIVITY_PRESETS = [
+    {'id': 'balanced', 'label': '均衡关注', 'weights': {'skills': 1 / 3, 'city': 1 / 3, 'major': 1 / 3}},
+    {'id': 'skills_first', 'label': '技能优先', 'weights': {'skills': 0.7, 'city': 0.15, 'major': 0.15}},
+    {'id': 'city_first', 'label': '城市优先', 'weights': {'skills': 0.15, 'city': 0.7, 'major': 0.15}},
+]
 
 
 class DecisionWeights(BaseModel):
@@ -90,6 +96,71 @@ def candidate_pool(db, data_kind, selected_ids):
     return pool, selected
 
 
+def observed_score(values, weights, excluded=False):
+    """Keep one scoring definition for comparison and all sensitivity scenarios."""
+    active = [(weights[key], value) for key, value in values.items() if value is not None and weights[key] > 0]
+    observed_weight = sum(weight for weight, _ in active)
+    score = (round(sum(weight * value for weight, value in active) / observed_weight * 100, 1)
+             if len(active) >= 2 and not excluded else None)
+    return score, observed_weight
+
+
+def sensitivity_analysis(comparisons, weights):
+    """Freeze the displayed shortlist; vary preferences only, never facts or eligibility."""
+    scenarios = [{'id': 'current', 'label': '本次设置', 'weights': deepcopy(weights)}, *deepcopy(SENSITIVITY_PRESETS)]
+    path_results = []
+    for path in dict.fromkeys(item['opportunity']['path'] for item in comparisons):
+        items = [item for item in comparisons if item['opportunity']['path'] == path]
+        results = []
+        for scenario in scenarios:
+            ranking = []
+            for item in items:
+                values = {part['key']: part['value'] for part in item['components']}
+                score, coverage = observed_score(values, scenario['weights'], item['eligibility'] == 'ineligible')
+                ranking.append({'opportunity_id': item['opportunity']['id'], 'score': score, 'rank': None,
+                                'observed_weight': round(coverage, 6)})
+            scores = sorted([entry['score'] for entry in ranking if entry['score'] is not None], reverse=True)
+            # Competition ranks give ties equal position rather than breaking them by arbitrary IDs.
+            for entry in ranking:
+                if entry['score'] is not None:
+                    entry['rank'] = scores.index(entry['score']) + 1
+            results.append({'scenario_id': scenario['id'], 'ranked_count': len(scores), 'rankings': ranking})
+        sufficient_peers = all(result['ranked_count'] >= 2 for result in results)
+        stability = []
+        for item in items:
+            item_id = item['opportunity']['id']
+            ranks = {result['scenario_id']: next(entry['rank'] for entry in result['rankings']
+                                                 if entry['opportunity_id'] == item_id) for result in results}
+            missing = [FACTOR_LABELS[c['key']] for c in item['components'] if c['value'] is None]
+            if item['eligibility'] == 'ineligible':
+                status, changed, explanation = 'excluded', None, '存在明确条件不符，各权重方案均不参与排序。'
+            elif any(rank is None for rank in ranks.values()):
+                status, changed, explanation = 'insufficient_evidence', None, '部分方案不足两个有效观测维度，暂不判断排序稳定性。'
+            elif not sufficient_peers:
+                status, changed, explanation = 'insufficient_peers', None, '同一路径缺少至少两个可评分机会，暂不判断排序稳定性。'
+            else:
+                changed = len(set(ranks.values())) > 1
+                status = 'sensitive' if changed else 'stable'
+                explanation = ('关注点变化后名次发生变化，请明确技能成长与城市偏好的取舍。' if changed else
+                               '在本次列出的四组权重下名次一致；这不代表对所有偏好或新增机会都稳定。')
+            if missing:
+                explanation += f' 尚缺依据：{"、".join(missing)}；排名不能替代缺失信息核验。'
+            stability.append({'opportunity_id': item_id, 'title': item['opportunity']['title'],
+                              'ranks': ranks, 'status': status, 'rank_changed': changed,
+                              'missing_dimensions': missing, 'explanation': explanation})
+        varied_coverage = len({tuple(c['key'] for c in item['components'] if c['value'] is not None)
+                              for item in items if item['eligibility'] != 'ineligible'}) > 1
+        path_results.append({'path': path, 'label': PATH_LABELS.get(path, path), 'compared_count': len(items),
+                             'scenario_results': results, 'stability': stability,
+                             'different_evidence_coverage': varied_coverage,
+                             'coverage_note': ('这些机会的已知维度不完全一致，排名需要结合缺失信息阅读。' if varied_coverage else
+                                               '各机会仍需分别核对原文资格、时间和未知条件。')})
+    return {'version': 'shortlist-sensitivity-v1', 'scope': 'displayed_comparisons_within_path',
+            'scenarios': scenarios, 'paths': path_results,
+            'notice': '固定本次展示清单，仅在同一路径内改变权重。并列分数同名次；未知项不补零，资格不符项不排名。'
+                      '未展示的机会不在本次敏感性分析中，名次不代表录用概率。'}
+
+
 def compare_opportunity(profile_data, item, weights):
     """Unknown evidence stays unknown and hard exclusions never receive a score."""
     skills = {normalize_skill(s) for s in profile_data['skills']}
@@ -121,13 +192,10 @@ def compare_opportunity(profile_data, item, weights):
         'major': ('自报专业名称与来源结构化要求一致' if values['major'] == 1 else
                   '自报专业名称与来源结构化要求不一致' if values['major'] == 0 else '来源未提供结构化专业条件'),
     }
-    components = [{'key': key, 'label': {'skills': '技能覆盖', 'city': '城市偏好', 'major': '专业条件'}[key],
+    components = [{'key': key, 'label': FACTOR_LABELS[key],
                    'value': value, 'weight': weights[key], 'evidence': evidence[key]}
                   for key, value in values.items()]
-    active = [(weights[key], value) for key, value in values.items() if value is not None and weights[key] > 0]
-    observed_weight = sum(weight for weight, _ in active)
-    score = (round(sum(weight * value for weight, value in active) / observed_weight * 100, 1)
-             if len(active) >= 2 and not exclusions else None)
+    score, observed_weight = observed_score(values, weights, bool(exclusions))
     if score is None and not exclusions:
         reasons.append('至少两个有观测依据且权重大于零的维度才能生成匹配分')
     reasons.extend(evidence[key] for key, value in values.items() if value is not None)
@@ -194,6 +262,9 @@ def two_week_actions(path, candidates, gaps, skills_unknown, role=None):
         activity = (role.get('actions') or ['选一个愿意尝试的相关任务'])[0]
         tasks.append(action(path, 'interest', f'结合{role_label}做一次兴趣验证',
                             f'兴趣问卷仅用于自我探索。可以尝试：{activity}。记录完成前后的兴趣、难点和成就感；不要把角色当作职业限制。'))
+    tasks.append(action(path, 'review', '第 14 天：回看证据并调整计划',
+                        '回看已完成的核验和练习：新增了哪些可靠信息？城市或技能偏好是否变化？哪些条件仍未知？'
+                        '把有依据的变化保存到个人画像，再生成一次比较，并通过历史记录解释调整原因。'))
     return tasks
 
 
@@ -273,6 +344,15 @@ def compare(payload: DecisionInput, data_kind: str = Query('public', pattern='^(
         'summary': f'按你选择的 {len(paths)} 条发展路径分别整理线索与两周行动；本次检查最多 {POOL_LIMIT} 条最新机会记录。',
         'paths': paths, 'comparisons': comparisons, 'action_plan': plan, 'notice': NOTICE,
         'evaluated_candidate_count': len(pool),
+        'decision_context': {
+            'selected_paths': data['intents'],
+            'profile_summary': {key: data[key] for key in ['major', 'degree', 'skills', 'cities']},
+            'missing_fields': [label for key, label in [('skills', '自报技能'), ('cities', '城市偏好')]
+                               if not data[key]],
+            'questionnaire_optional': True,
+            'interest_available': context.get('interest_response_id') is not None,
+        },
+        'sensitivity': sensitivity_analysis(comparisons, weights),
     }
     run = DecisionRun(user_id=user.id, profile_id=profile.id, profile_version=profile.version,
                       model_version=MODEL_VERSION, data_kind=data_kind,
