@@ -11,8 +11,8 @@ const steps = computed(() => [
   { title: '了解自己', to: '/profile', action: profile.value ? '更新我的画像' : '填写个人画像', status: profile.value ? `已保存 V${profile.value.version}` : '从这里开始', text: '填写专业、技能、城市偏好与多条发展意向，保存一个可以回溯的画像版本。', output: '个人画像、已知条件与待补信息' },
   { title: '探索兴趣', to: '/interests', action: '查看职业探索', status: interest.value?.response_id ? '已有兴趣记录' : '可选步骤', text: '自愿回答30题活动兴趣问卷，用六维兴趣与拟人化伙伴帮助自我探索；也可以跳过。', output: '兴趣解释与可自主选择的探索伙伴' },
   { title: '收集选择依据', to: '/analytics', action: '打开数据洞察', status: '随时查看', text: '先看城市、路径与技能分布，再到发展机会核对来源与条件，勾选最多6个候选。', output: '有来源的市场信息与候选清单', secondary: { to: '/opportunities', label: '筛选发展机会 →' } },
-  { title: '比较与取舍', to: '/decisions', action: '进入辅助决策', status: latest.value ? `已有比较 #${latest.value.id}` : '等待首次比较', text: '说明你重视什么，比较同一路径的机会、缺失依据和技能差距，再观察改变偏好后排序是否变化。', output: '比较依据、权重敏感性与历史快照' },
-  { title: '行动后再评估', to: '/decisions#action-plan', action: '查看行动与历史', status: total.value ? `${done.value} / ${total.value} 项已完成` : '比较后生成', text: '执行两周行动清单，记录进度。获得新技能或发现新要求后更新画像，再生成一份比较。', output: '行动进度与新一轮决策依据' },
+  { title: '比较与取舍', to: '/decisions', action: '进入辅助决策', status: latest.value ? `已有比较 #${latest.value.id}` : '等待首次比较', text: '说明你重视什么，比较同一路径的机会、缺失依据和技能差距，再观察改变偏好后排序是否变化。', output: '比较依据、权重敏感性与历史快照', secondary: {to:'/experiments',label:'对照规则与文本方法 →'} },
+  { title: '行动后再评估', to: '/decisions#action-plan', action: '查看行动与历史', status: total.value ? `${done.value} / ${total.value} 项已完成` : '比较后生成', text: '执行两周行动清单，记录进度。获得新技能或发现新要求后更新画像，再生成一份比较。', output: '行动进度与新一轮决策依据', secondary: {to:'/skills',label:'把技能线索变成练习计划 →'} },
 ])
 async function load() {
   const id = ++epoch

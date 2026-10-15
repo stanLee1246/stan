@@ -83,6 +83,20 @@ def analytics(data_kind: str = Query('public', pattern='^(demo|public)$'), city:
         'city_path_matrix': {'cities': top_cities, 'paths': path_keys,
                              'series': [{'path': p, 'label': PATH_LABELS[p], 'data': [city_path_counts[(c, p)] for c in top_cities]} for p in path_keys]},
         'qualification': {'verified': verified, 'needs_review': len(records) - verified, 'deadline_unknown': unknown_deadline},
+        'quality': {
+            'denominator': len(records), 'definition': '当前筛选范围最新公告的字段已知数量；字段已知不代表已经核实，不合成为质量总分。',
+            'fields': [{'key': key, 'label': label, 'known': known, 'unknown': len(records) - known,
+                        'coverage': known / len(records) if records else None}
+                       for key, label, known in [
+                           ('city', '城市', sum(bool(o.city) for o in records)),
+                           ('skills', '结构化技能', sum(any(s.strip() for s in o.skills) for o in records)),
+                           ('majors', '结构化专业条件', sum(bool(o.majors) for o in records)),
+                           ('degree', '最低学历', sum(bool(o.minimum_degree) for o in records)),
+                           ('published_at', '发布日期', len(records) - unknown_published),
+                           ('deadline', '截止日期', len(records) - unknown_deadline),
+                       ]],
+            'qualification_review': len(records) - verified,
+        },
         'sources': [{'name': host, 'count': n} for host, n in sorted(source_counts.items())],
         'generated_at': now(),
         'notice': '模拟数据仅用于功能与交互演示，不能作为真实市场结论' if data_kind == 'demo' else '公开公告需核对原文，未发布/未知条件不补成零或承诺资格',

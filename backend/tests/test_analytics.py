@@ -37,3 +37,29 @@ def test_portrait_observable_tags_and_privacy(client, student):
     assert {t['name'] for t in result['observable_tags']} >= {'数据工程搭建', '数据分析实践'}
     assert '英语情况' in result['profile_completeness']['missing']
     assert all(t['evidence'] == 'self_report' for t in result['observable_tags'])
+
+
+def test_quality_exposes_field_denominators_without_fake_empty_percentages(client, admin):
+    empty = client.get('/api/analytics').json()['quality']
+    assert empty['denominator'] == 0 and all(row['coverage'] is None for row in empty['fields'])
+    client.post('/api/admin/opportunities', headers=admin, json=opportunity(city=None,skills=[],majors=[],minimum_degree=None,published_at=None,deadline=None))
+    client.post('/api/admin/opportunities', headers=admin, json=opportunity(source_record_id='known',source_url='https://example.com/known',published_at='2026-10-01'))
+    quality = client.get('/api/analytics?data_kind=demo').json()['quality']
+    assert quality['denominator'] == 2
+    assert all(row['known'] == 1 and row['unknown'] == 1 and row['coverage'] == .5 for row in quality['fields'])
+    assert quality['qualification_review'] == 1
+    assert 'score' not in quality
+
+
+def test_chart_drillthrough_filters_preserve_latest_versions_dates_and_scope(client, admin):
+    base=opportunity(skills=['Python'],published_at='2026-10-01')
+    client.post('/api/admin/opportunities',headers=admin,json=base)
+    client.post('/api/admin/opportunities',headers=admin,json={**base,'skills':['SQL']})
+    client.post('/api/admin/opportunities',headers=admin,json=opportunity(source_record_id='skill-match',source_url='https://example.com/skill-match',skills=['python','SQL'],city='衡阳市',published_at='2026-10-02'))
+    client.post('/api/admin/opportunities',headers=admin,json=opportunity(source_record_id='date-unknown',source_url='https://example.com/date-unknown',skills=['Python'],city='衡阳',published_at=None))
+    query='data_kind=demo&skill=PYTHON&city=衡阳市&path=employment&major=数据科学与大数据技术&start_date=2026-10-01&end_date=2026-10-31&include_expired=true'
+    result=client.get('/api/opportunities?'+query)
+    assert result.status_code==200 and len(result.json())==1
+    assert result.json()[0]['source_url']=='https://example.com/skill-match'
+    assert client.get('/api/opportunities?skill=Python&include_expired=true').json()==[]
+    assert client.get('/api/opportunities?data_kind=demo&start_date=2026-11-01&end_date=2026-01-01').status_code==422

@@ -22,6 +22,8 @@ async function signOut() {
         <RouterLink to="/profile"><span>◎</span>个人画像</RouterLink>
         <RouterLink to="/interests"><span>✦</span>职业探索</RouterLink>
         <RouterLink to="/decisions"><span>⚖</span>辅助决策</RouterLink>
+        <RouterLink to="/skills"><span>↟</span>技能成长</RouterLink>
+        <RouterLink to="/experiments"><span>⚗</span>推荐方法对照</RouterLink>
         <RouterLink to="/analytics"><span>▥</span>数据洞察</RouterLink>
         <RouterLink to="/opportunities"><span>↗</span>发展机会</RouterLink>
         <RouterLink to="/experiences"><span>☷</span>校友经验</RouterLink>

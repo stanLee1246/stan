@@ -7,11 +7,14 @@ import { CanvasRenderer } from 'echarts/renderers'
 echarts.use([BarChart, PieChart, LineChart, RadarChart, ScatterChart, HeatmapChart, TreemapChart,
   GridComponent, TooltipComponent, LegendComponent, RadarComponent, VisualMapComponent, GraphicComponent, AriaComponent, CanvasRenderer])
 const props = defineProps({ option: Object, label: String })
+const emit = defineEmits(['select'])
 const element = ref(null)
 let chart, observer
 onMounted(() => {
   chart = echarts.init(element.value)
   chart.setOption({ ...props.option, aria: { enabled: true, label: { description: props.label } } })
+  chart.on('click', event => emit('select', { name: event.name, dataIndex: event.dataIndex,
+    seriesIndex: event.seriesIndex, seriesName: event.seriesName, value: event.value }))
   observer = new ResizeObserver(() => chart?.resize())
   observer.observe(element.value)
 })

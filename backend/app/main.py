@@ -16,7 +16,7 @@ from .security import hash_password, token_hash, verify_password
 from .services import PATH_LABELS, import_outcomes, normalize_city, normalize_skill, opportunity_dict, profile_dict, score_opportunity
 from .auth import administrator, bearer, current_user
 
-app = FastAPI(title='学生职业发展辅助决策平台', version='0.3.0')
+app = FastAPI(title='学生职业发展辅助决策平台', version='0.4.0')
 DUMMY_PASSWORD_HASH = hash_password('unavailable-account-placeholder')
 
 
@@ -134,10 +134,19 @@ def latest_opportunities(db, data_kind):
 
 @app.get('/api/opportunities')
 def opportunities(data_kind: str = Query('public', pattern='^(demo|public)$'), path: str | None = None,
-                  city: str | None = None, q: str = '', include_expired: bool = False, db=Depends(get_db)):
+                  city: str | None = None, skill: str | None = Query(None, max_length=100),
+                  major: str | None = Query(None, max_length=100), start_date: date | None = None,
+                  end_date: date | None = None, q: str = Query('', max_length=200),
+                  include_expired: bool = False, db=Depends(get_db)):
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(422, '开始日期不能晚于结束日期')
     items = latest_opportunities(db, data_kind)
     return [opportunity_dict(o) for o in items if (not path or o.path == path) and
-            (not city or o.city == normalize_city(city)) and
+            (not city or normalize_city(o.city or '') == normalize_city(city)) and
+            (not skill or normalize_skill(skill) in {normalize_skill(s) for s in o.skills}) and
+            (not major or major in o.majors) and
+            (not start_date or (o.published_at is not None and o.published_at >= start_date)) and
+            (not end_date or (o.published_at is not None and o.published_at <= end_date)) and
             (not q or q.casefold() in (o.title + o.organization + o.description).casefold()) and
             (include_expired or o.deadline is None or o.deadline >= date.today())][:200]
 
@@ -324,6 +333,8 @@ from .crawling import router as crawling_router
 from .school_data import router as school_data_router
 from .data_pipeline import router as data_pipeline_router
 from .survey_import import router as survey_import_router
+from .text_experiments import router as text_experiments_router
+from .skill_roadmap import router as skill_roadmap_router
 
 app.include_router(analytics_router)
 app.include_router(interests_router)
@@ -332,3 +343,5 @@ app.include_router(crawling_router)
 app.include_router(school_data_router)
 app.include_router(data_pipeline_router)
 app.include_router(survey_import_router)
+app.include_router(text_experiments_router)
+app.include_router(skill_roadmap_router)

@@ -1,15 +1,78 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { api, preferences, setDemo, paths } from '../api'
 import Chart from '../components/Chart.vue'
 import '../styles/analytics.css'
 
 const data = ref(null), loading = ref(false), error = ref(''), view = ref('charts')
 const major = ref(''), city = ref(''), path = ref(''), startDate = ref(''), endDate = ref('')
-let requestId = 0
+const router = useRouter(), route = useRoute(), interaction = ref(''), sharedLink = ref('')
+let restoringRoute = false
+const queryKey = query => JSON.stringify(Object.entries(query).filter(([,value])=>value !== '').sort(([a],[b])=>a.localeCompare(b)))
+function filterParams() {
+  const params = {data_kind:preferences.demo ? 'demo' : 'public'}
+  for (const [key,value] of Object.entries({major:major.value.trim(),city:city.value.trim(),path:path.value,start_date:startDate.value,end_date:endDate.value})) if(value) params[key]=value
+  return params
+}
+function applyRoute() {
+  const value = key => typeof route.query[key] === 'string' ? route.query[key] : ''
+  restoringRoute = true
+  if(['demo','public'].includes(value('data_kind'))) setDemo(value('data_kind') === 'demo')
+  major.value=value('major');city.value=value('city');path.value=value('path');startDate.value=value('start_date');endDate.value=value('end_date')
+  restoringRoute = false
+}
+applyRoute()
+let requestId = 0, requestedQueryKey = ''
 const colors = ['#2d7562', '#76a898', '#d6ae68', '#6e8ca7', '#ba91a3', '#9bad69', '#8b9998']
 const rows = key => Array.isArray(data.value?.[key]) ? data.value[key] : []
 const summary = computed(() => data.value?.summary || {})
+const qualityRows = computed(() => data.value?.quality?.fields || [])
+const appliedScope = computed(() => data.value?.scope || {})
+function appliedParams() {
+  return Object.fromEntries(Object.entries({data_kind:data.value?.data_kind || (preferences.demo ? 'demo':'public'),
+    major:appliedScope.value.major,city:appliedScope.value.city,path:appliedScope.value.path,
+    start_date:appliedScope.value.start_date,end_date:appliedScope.value.end_date}).filter(([,value])=>value))
+}
+function restoreApplied() {
+  const s=appliedScope.value
+  major.value=s.major || '';city.value=s.city || '';path.value=s.path || '';startDate.value=s.start_date || '';endDate.value=s.end_date || ''
+}
+function selectPath(event) {
+  const item=pathRows.value[event.dataIndex]; if(!item) return
+  restoreApplied();path.value=item.key;interaction.value=`已按发展路径“${item.label}”联动全部图表。`;load()
+}
+function selectCity(event) {
+  const name=cityRows.value[event.dataIndex]?.key || event.name
+  if(!name || name === '未知') { interaction.value='该项城市未标注，暂不能按具体城市筛选；请在字段完整性中核对缺失情况。';return }
+  restoreApplied();city.value=name;interaction.value=`已按城市“${name}”联动全部图表。`;load()
+}
+function selectMonth(event) {
+  const month=monthRows.value[event.dataIndex]?.month; if(!/^\d{4}-\d{2}$/.test(month || '')) return
+  const [year,number]=month.split('-').map(Number)
+  restoreApplied();startDate.value=`${month}-01`;endDate.value=`${month}-${new Date(Date.UTC(year,number,0)).getUTCDate()}`
+  interaction.value=`已按 ${month} 的公告发布日期联动全部图表；未知发布日期不纳入。`;load()
+}
+function inspectSkill(name, place) {
+  if(!name || place === '未知') {interaction.value='该格城市未标注，不能自动定位到具体城市；可从下方技能按钮查看全部来源。';return}
+  const query={...appliedParams(),skill:name,include_expired:'true'}
+  if(place) query.city=place
+  router.push({path:'/opportunities',query})
+}
+function selectHeat(event) {
+  if(!Array.isArray(event.value)) return
+  inspectSkill(heat.value.skills[event.value[0]],heat.value.cities[event.value[1]])
+}
+function selectStack(event) {
+  const key=Object.keys(paths).find(key=>paths[key] === event.seriesName)
+  if(event.name === '未知' || !key) return
+  restoreApplied();city.value=event.name;path.value=key;interaction.value=`已联动 ${event.name} · ${paths[key]} 的公告。`;load()
+}
+async function shareAnalysis() {
+  sharedLink.value=window.location.origin+router.resolve({path:'/analytics',query:appliedParams()}).href
+  try {await navigator.clipboard.writeText(sharedLink.value);interaction.value='已复制当前分析链接；对方打开后会恢复相同数据类型与筛选范围。'}
+  catch {interaction.value='当前浏览器无法自动复制，请复制下方链接。'}
+}
 const hasData = computed(() => Number(summary.value.opportunities) > 0)
 const pathRows = computed(() => rows('paths'))
 const cityRows = computed(() => rows('cities'))
@@ -91,15 +154,16 @@ async function load() {
     error.value = '开始日期不能晚于结束日期。'; data.value = null; loading.value = false; return
   }
   loading.value = true; error.value = ''; data.value = null
-  const params = new URLSearchParams({ data_kind: preferences.demo ? 'demo' : 'public' })
-  const filters = { major: major.value.trim(), city: city.value.trim(), path: path.value, start_date: startDate.value, end_date: endDate.value }
-  Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value) })
+  const query = filterParams(), params = new URLSearchParams(query)
+  requestedQueryKey = queryKey(query)
+  sharedLink.value = ''
+  if(queryKey(route.query) !== queryKey(query)) router.replace({query})
   try { const result = await api(`/analytics?${params}`); if (current === requestId) data.value = result }
   catch (failure) { if (current === requestId) error.value = failure.message }
   finally { if (current === requestId) loading.value = false }
 }
 function reset() {
-  major.value = ''; city.value = ''; path.value = ''; startDate.value = ''; endDate.value = ''; load()
+  major.value = ''; city.value = ''; path.value = ''; startDate.value = ''; endDate.value = ''; interaction.value='已清除分析筛选。';load()
 }
 function exportCsv() {
   if (!data.value || loading.value) return
@@ -114,6 +178,7 @@ function exportCsv() {
     ...sourceRows.value.map(item => [kind, '来源', item.name, '', item.count, '条公告']),
     [kind, '统计范围', JSON.stringify(data.value.scope || {}), '', '', ''],
     [kind, '口径说明', data.value.notice || '', '', '', '']]
+  records.push(...qualityRows.value.map(item=>[kind,'字段完整性',item.label,`已知 / ${data.value.quality.denominator}`,item.known,'条公告']))
   // Quoting protects CSV structure; prefix text that spreadsheet apps could interpret as a formula.
   const encode = value => {
     let text = String(value ?? '')
@@ -125,7 +190,8 @@ function exportCsv() {
   link.href = url; link.download = `career-analytics-${preferences.demo ? 'demo' : 'public'}-${new Date().toISOString().slice(0, 10)}.csv`
   document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url)
 }
-watch(() => preferences.demo, load)
+watch(() => preferences.demo, () => {if(!restoringRoute) {interaction.value='';load()}},{flush:'sync'})
+watch(() => route.query, () => {applyRoute();if(requestedQueryKey !== queryKey(filterParams())) load()})
 onMounted(load)
 onBeforeUnmount(() => { requestId += 1 })
 </script>
@@ -159,13 +225,13 @@ onBeforeUnmount(() => { requestId += 1 })
       <div v-if="!hasData" class="empty large analytics-empty"><span aria-hidden="true">▥</span><h3>{{ preferences.demo ? '当前筛选没有模拟公告' : '当前范围尚无公开公告' }}</h3><p>{{ preferences.demo ? '试试清除筛选条件，查看完整模拟样本。' : '管理员采集、核验或导入公告后，这里会显示真实分布。可以先切换模拟演示体验六种图表。' }}</p><button v-if="!preferences.demo" class="button" @click="setDemo(true)">体验模拟演示</button><button v-else class="button" @click="reset">清除筛选</button></div>
       <template v-else>
         <div class="analytics-toolbar"><p><span class="analytics-live-dot"></span>{{ preferences.demo ? '模拟机会' : '公开公告' }} · 共 {{ summary.opportunities }} 条 <span class="muted">统计生成于 {{ generated }}（UTC+9）</span></p><div class="analytics-tools"><div class="analytics-view-switch" role="group" aria-label="统计呈现方式"><button :class="{ active: view === 'charts' }" @click="view = 'charts'">图表</button><button :class="{ active: view === 'tables' }" @click="view = 'tables'">表格</button></div><button class="ghost" @click="exportCsv">导出统计 CSV ↓</button></div></div>
-        <div class="analytics-chart-grid">
-          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">01 / 环形图</span><h2>机会的路径构成</h2></div><span class="tag">条公告</span></div><Chart v-if="view === 'charts' && pathRows.length" :option="pie" label="机会公告发展路径占比"/><div v-else-if="view === 'tables'" class="table-scroll"><table><caption class="analytics-sr-only">发展路径公告数量</caption><thead><tr><th scope="col">路径</th><th scope="col">公告</th><th scope="col">占比</th></tr></thead><tbody><tr v-for="item in pathRows" :key="item.key"><td>{{ item.label }}</td><td>{{ item.count }}</td><td>{{ (item.count / summary.opportunities * 100).toFixed(1) }}%</td></tr></tbody></table></div><div v-else class="empty">暂无路径数据</div><p class="analytics-chart-note">每条公告归属一条发展路径，分母为当前 {{ summary.opportunities }} 条公告。点击图例可聚焦某一路径。</p></section>
-          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">02 / 横向条形图</span><h2>机会集中在哪些城市</h2></div><span class="tag">条公告</span></div><Chart v-if="view === 'charts' && cityRows.length" :option="cityBar" label="机会公告城市数量排名"/><div v-else-if="view === 'tables'" class="table-scroll"><table><thead><tr><th scope="col">城市</th><th scope="col">公告</th></tr></thead><tbody><tr v-for="item in cityRows" :key="item.key"><td>{{ item.label }}</td><td>{{ item.count }}</td></tr></tbody></table></div><div v-else class="empty">暂无城市数据</div><p class="analytics-chart-note">图表展示前 12 个城市，表格与导出包含全部。缺失城市显示为待核对。</p></section>
-          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">03 / 折线图</span><h2>公告发布时间分布</h2></div><span class="tag">条公告 / 月</span></div><Chart v-if="view === 'charts' && monthRows.length" :option="monthlyLine" label="各月发布机会公告数量"/><div v-else-if="view === 'tables'" class="table-scroll"><table><thead><tr><th scope="col">发布月份</th><th scope="col">公告</th></tr></thead><tbody><tr v-for="item in monthRows" :key="item.month"><td>{{ item.month }}</td><td>{{ item.count }}</td></tr></tbody></table></div><div v-else class="empty">暂无可统计的发布日期</div><p class="analytics-chart-note">{{ datedCount }} 条有发布日期，{{ Math.max(0, summary.opportunities - datedCount) }} 条日期待核对；缺失日期不补造月份。这是公告发布分布，采集覆盖会影响曲线。</p></section>
-          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">04 / 堆叠柱状图</span><h2>城市与路径交叉观察</h2></div><span class="tag">条公告</span></div><Chart v-if="view === 'charts' && matrixRows.length" :option="stacked" label="各城市不同发展路径公告数量"/><div v-else-if="view === 'tables'" class="table-scroll"><table><thead><tr><th scope="col">城市</th><th scope="col">路径</th><th scope="col">公告</th></tr></thead><tbody><tr v-for="(item, index) in matrixRows" :key="index"><td>{{ item.city }}</td><td>{{ item.path }}</td><td>{{ item.count }}</td></tr></tbody></table></div><div v-else class="empty">暂无城市与路径交叉数据</div><p class="analytics-chart-note">展示公告数量最多的 {{ matrix.cities?.length || 0 }} 个城市，各色为对应路径。点击图例可筛看某条路径，数量不代表招聘名额。</p></section>
-          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">05 / 热力图</span><h2>各城市关注的技能</h2></div><span class="tag">条公告提及</span></div><Chart v-if="view === 'charts' && heatRows.length" :option="heatmap" label="城市和技能公告提及数量热力图"/><div v-else-if="view === 'tables'" class="table-scroll"><table><thead><tr><th scope="col">城市</th><th scope="col">技能</th><th scope="col">提及公告</th></tr></thead><tbody><tr v-for="(item, index) in heatRows" :key="index"><td>{{ item.city }}</td><td>{{ item.skill }}</td><td>{{ item.count }}</td></tr></tbody></table></div><div v-else class="empty">暂无已标注技能，采集文本须核验后才纳入</div><p class="analytics-chart-note">展示前 {{ heat.cities?.length || 0 }} 个城市与前 {{ heat.skills?.length || 0 }} 项技能。颜色越深，提及该技能的公告越多；一条公告可含多项技能。</p></section>
-          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">06 / 矩形树图</span><h2>技能需求的相对构成</h2></div><span class="tag">条公告提及</span></div><Chart v-if="view === 'charts' && skillRows.length" :option="treemap" label="机会公告技能提及数量矩形树图"/><div v-else-if="view === 'tables'" class="table-scroll"><table><thead><tr><th scope="col">技能</th><th scope="col">提及公告</th></tr></thead><tbody><tr v-for="item in skillRows" :key="item.key"><td>{{ item.label }}</td><td>{{ item.count }}</td></tr></tbody></table></div><div v-else class="empty">暂无技能标签</div><p class="analytics-chart-note">面积按技能提及公告数绘制，展示前 18 项；当前共 {{ totalSkills }} 次技能提及。同一公告内同一技能只计一次。</p></section>
+        <section class="panel analytics-drilldown"><div class="panel-heading"><h2>把图表里的线索，追到具体机会</h2><button class="ghost" @click="shareAnalysis">复制当前分析链接</button></div><p class="data-note">点击路径、城市、月份图可联动筛选；点击技能或热力格可查看原始机会。以下按钮提供相同的键盘操作。</p><p v-if="interaction" role="status" class="data-note">{{ interaction }}</p><label v-if="sharedLink">当前分析链接<input :value="sharedLink" readonly @focus="$event.target.select()"></label><div class="analytics-drill-group" role="group" aria-label="按发展路径联动"><button v-for="(item,index) in pathRows" :key="item.key" class="tag" :aria-label="`按发展路径筛选${item.label}`" @click="selectPath({dataIndex:index})">{{ item.label }} · {{ item.count }}</button></div><div class="analytics-drill-group" role="group" aria-label="按城市联动"><button v-for="(item,index) in cityRows.slice(0,12)" :key="item.key" class="tag neutral" :disabled="item.key === '未知'" :aria-label="`按城市筛选${item.label}`" @click="selectCity({dataIndex:index})">{{ item.label }} · {{ item.count }}</button></div><div class="analytics-drill-group" role="group" aria-label="按发布月份联动"><button v-for="(item,index) in monthRows" :key="item.month" class="tag neutral" :aria-label="`按发布月份筛选${item.month}`" @click="selectMonth({dataIndex:index})">{{ item.month }} · {{ item.count }}</button></div><div class="analytics-drill-group" role="group" aria-label="从技能查看机会"><button v-for="item in skillRows.slice(0,12)" :key="item.key" class="tag amber" :aria-label="`查看要求${item.label}的机会`" @click="inspectSkill(item.key)">{{ item.label }} ↗</button></div><p class="data-note">{{ appliedScope.city ? `城市：${appliedScope.city} · ` : '' }}{{ appliedScope.path ? `路径：${paths[appliedScope.path]} · ` : '' }}{{ appliedScope.start_date || appliedScope.end_date ? `发布日：${appliedScope.start_date || '不限'} 至 ${appliedScope.end_date || '不限'}` : '发布日期不限' }}。技能钻取包含过期公告，与图表统计范围一致；申请前核对截止时间。</p><button class="ghost" @click="reset">清除联动筛选</button></section><section class="panel analytics-quality"><div class="panel-heading"><h2>先看字段是否齐全，再解释图表</h2><span class="tag">当前 {{ data.quality?.denominator ?? summary.opportunities }} 条公告</span></div><p class="data-note">{{ data.quality?.definition }}</p><div class="table-scroll"><table aria-label="公告字段完整性"><thead><tr><th>字段</th><th>已知 / 总公告</th><th>缺失</th><th>字段覆盖率</th></tr></thead><tbody><tr v-for="item in qualityRows" :key="item.key"><td>{{ item.label }}</td><td>{{ item.known }} / {{ data.quality.denominator }}</td><td>{{ item.unknown }}</td><td>{{ item.coverage == null ? '暂无分母' : `${(item.coverage*100).toFixed(1)}%` }}</td></tr></tbody></table></div><p class="data-note">仍需核对完整资格：{{ data.quality?.qualification_review }} 条。覆盖率仅描述信息缺失，不能代表数据准确率、模型准确率或个人录用概率。</p></section><div class="analytics-chart-grid">
+          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">01 / 环形图</span><h2>机会的路径构成</h2></div><span class="tag">条公告</span></div><Chart v-if="view === 'charts' && pathRows.length" :option="pie" label="机会公告发展路径占比" @select="selectPath"/><div v-else-if="view === 'tables'" class="table-scroll"><table><caption class="analytics-sr-only">发展路径公告数量</caption><thead><tr><th scope="col">路径</th><th scope="col">公告</th><th scope="col">占比</th></tr></thead><tbody><tr v-for="item in pathRows" :key="item.key"><td>{{ item.label }}</td><td>{{ item.count }}</td><td>{{ (item.count / summary.opportunities * 100).toFixed(1) }}%</td></tr></tbody></table></div><div v-else class="empty">暂无路径数据</div><p class="analytics-chart-note">每条公告归属一条发展路径，分母为当前 {{ summary.opportunities }} 条公告。点击图例可聚焦某一路径。</p></section>
+          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">02 / 横向条形图</span><h2>机会集中在哪些城市</h2></div><span class="tag">条公告</span></div><Chart v-if="view === 'charts' && cityRows.length" :option="cityBar" label="机会公告城市数量排名" @select="selectCity"/><div v-else-if="view === 'tables'" class="table-scroll"><table><thead><tr><th scope="col">城市</th><th scope="col">公告</th></tr></thead><tbody><tr v-for="item in cityRows" :key="item.key"><td>{{ item.label }}</td><td>{{ item.count }}</td></tr></tbody></table></div><div v-else class="empty">暂无城市数据</div><p class="analytics-chart-note">图表展示前 12 个城市，表格与导出包含全部。缺失城市显示为待核对。</p></section>
+          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">03 / 折线图</span><h2>公告发布时间分布</h2></div><span class="tag">条公告 / 月</span></div><Chart v-if="view === 'charts' && monthRows.length" :option="monthlyLine" label="各月发布机会公告数量" @select="selectMonth"/><div v-else-if="view === 'tables'" class="table-scroll"><table><thead><tr><th scope="col">发布月份</th><th scope="col">公告</th></tr></thead><tbody><tr v-for="item in monthRows" :key="item.month"><td>{{ item.month }}</td><td>{{ item.count }}</td></tr></tbody></table></div><div v-else class="empty">暂无可统计的发布日期</div><p class="analytics-chart-note">{{ datedCount }} 条有发布日期，{{ Math.max(0, summary.opportunities - datedCount) }} 条日期待核对；缺失日期不补造月份。这是公告发布分布，采集覆盖会影响曲线。</p></section>
+          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">04 / 堆叠柱状图</span><h2>城市与路径交叉观察</h2></div><span class="tag">条公告</span></div><Chart v-if="view === 'charts' && matrixRows.length" :option="stacked" label="各城市不同发展路径公告数量" @select="selectStack"/><div v-else-if="view === 'tables'" class="table-scroll"><table><thead><tr><th scope="col">城市</th><th scope="col">路径</th><th scope="col">公告</th></tr></thead><tbody><tr v-for="(item, index) in matrixRows" :key="index"><td>{{ item.city }}</td><td>{{ item.path }}</td><td>{{ item.count }}</td></tr></tbody></table></div><div v-else class="empty">暂无城市与路径交叉数据</div><p class="analytics-chart-note">展示公告数量最多的 {{ matrix.cities?.length || 0 }} 个城市，各色为对应路径。点击图例可筛看某条路径，数量不代表招聘名额。</p></section>
+          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">05 / 热力图</span><h2>各城市关注的技能</h2></div><span class="tag">条公告提及</span></div><Chart v-if="view === 'charts' && heatRows.length" :option="heatmap" label="城市和技能公告提及数量热力图" @select="selectHeat"/><div v-else-if="view === 'tables'" class="table-scroll"><table><thead><tr><th scope="col">城市</th><th scope="col">技能</th><th scope="col">提及公告</th></tr></thead><tbody><tr v-for="(item, index) in heatRows" :key="index"><td>{{ item.city }}</td><td>{{ item.skill }}</td><td>{{ item.count }}</td></tr></tbody></table></div><div v-else class="empty">暂无已标注技能，采集文本须核验后才纳入</div><p class="analytics-chart-note">展示前 {{ heat.cities?.length || 0 }} 个城市与前 {{ heat.skills?.length || 0 }} 项技能。颜色越深，提及该技能的公告越多；一条公告可含多项技能。</p></section>
+          <section class="panel analytics-chart-card"><div class="analytics-card-head"><div><span class="analytics-chart-number">06 / 矩形树图</span><h2>技能需求的相对构成</h2></div><span class="tag">条公告提及</span></div><Chart v-if="view === 'charts' && skillRows.length" :option="treemap" label="机会公告技能提及数量矩形树图" @select="event=>inspectSkill(event.name)"/><div v-else-if="view === 'tables'" class="table-scroll"><table><thead><tr><th scope="col">技能</th><th scope="col">提及公告</th></tr></thead><tbody><tr v-for="item in skillRows" :key="item.key"><td>{{ item.label }}</td><td>{{ item.count }}</td></tr></tbody></table></div><div v-else class="empty">暂无技能标签</div><p class="analytics-chart-note">面积按技能提及公告数绘制，展示前 18 项；当前共 {{ totalSkills }} 次技能提及。同一公告内同一技能只计一次。</p></section>
         </div>
         <section class="panel analytics-source-panel"><div><span class="analytics-chart-number">DATA PROVENANCE</span><h2>来源与统计边界</h2><p>{{ data.notice || '仅统计当前筛选范围内最新版本的已导入公告。' }}</p></div><ul v-if="sourceRows.length"><li v-for="(item, index) in sourceRows" :key="`${item.name}-${index}`"><span>{{ item.name || '来源待核对' }}</span><strong>{{ item.count }} 条</strong></li></ul><p v-else>暂无来源统计</p><div class="analytics-source-footer">已确认过期 {{ summary.total_expired ?? 0 }} 条 · 截止日期待核对 {{ summary.deadline_unknown ?? 0 }} 条。所有图表含当前范围内已过期公告；申请前请查看原始公告并核对资格与截止日期。</div></section>
         <section class="analytics-next-step"><div><span class="analytics-kicker">下一步，把范围缩小到适合自己</span><h2>看完机会，再比较你的选择。</h2><p>将个人画像、偏好和准备成本放在一起，逐项比较发展路径。</p></div><RouterLink class="button" to="/decisions">打开职业决策工作台 →</RouterLink></section>
@@ -173,3 +239,7 @@ onBeforeUnmount(() => { requestId += 1 })
     </template>
   </div>
 </template>
+
+<style scoped>
+.analytics-drill-group{display:flex;gap:7px;flex-wrap:wrap;margin:11px 0}.analytics-drill-group button{cursor:pointer;white-space:normal;text-align:left}.analytics-drill-group button:hover{outline:1px solid #a8bd9b}.analytics-drill-group button:disabled{cursor:default}.analytics-drilldown .panel-heading{flex-wrap:wrap;gap:10px}.analytics-drilldown input{font-size:11px;min-width:0}.analytics-quality table{font-size:12px}.analytics-quality .data-note,.analytics-drilldown .data-note{line-height:1.9;overflow-wrap:anywhere}
+</style>
