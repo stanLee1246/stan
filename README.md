@@ -1,8 +1,8 @@
-# 基于多源数据仓库与动态用户画像的大学生职业发展辅助决策分析
+# 基于多源数据仓库与动态用户画像的大学生职业发展辅助分析决策平台
 
 面向湖南交通工程学院学生的毕业设计原型 V0.4。Vue 3 + Vite + ECharts 前端，FastAPI + SQLAlchemy + Alembic 后端，**正式本地开发使用 MySQL 8.0 / 8.4**。不依赖云数据库、付费 API、学校 SSO 或 Docker；Docker 仅用于可选的开发验证。
 
-**(docs/FEATURES_V4.md)**：基于 [七组公开参考](docs/REFERENCE_RESEARCH_V4.md) 增加技能成长路线、规则/TF-IDF推荐方法对照、图表联动与机会钻取、字段完整性和可恢复范围链接。SQLite/MySQL各124项后端测试、14项浏览器流程通过。高校资料、问卷文件与分层仓库见 [V0.3指南](docs/REVIEW_V3.md)，正式技术路线见 [实施方案](docs/FORMAL_PROJECT_PLAN.md)。完整分布式仓库与PySpark规模实验仍为后续工作。
+**指南看这里(docs/FEATURES_V4.md)**：基于 [七组公开参考](docs/REFERENCE_RESEARCH_V4.md) 增加技能成长路线、规则/TF-IDF推荐方法对照、图表联动与机会钻取、字段完整性和可恢复范围链接。SQLite/MySQL各124项后端测试、14项浏览器流程通过。高校资料、问卷文件与分层仓库见 正式技术路线见 [实施方案](docs/FORMAL_PROJECT_PLAN.md)。完整分布式仓库与PySpark规模实验仍为后续工作
 
 ## 在你的 Windows 电脑运行
 
