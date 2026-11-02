@@ -1,4 +1,4 @@
-# 基于多源数据仓库大学生动态画像的辅助决策分析可视化
+# 基于多源数据的大学生毕业去向可视化分析
 
 面向湖南交通工程学院学生的毕业设计原型 V0.4。Vue 3 + Vite + ECharts 前端，FastAPI + SQLAlchemy + Alembic 后端，**正式本地开发使用 MySQL 8.0 / 8.4**。不依赖云数据库、付费 API、学校 SSO 或 Docker；Docker 仅用于可选的开发验证。
 
